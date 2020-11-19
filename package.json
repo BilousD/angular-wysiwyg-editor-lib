@@ -1,6 +1,6 @@
 {
   "name": "@bilousd/angular-wysiwyg-editor-lib",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "peerDependencies": {
     "@angular/common": "^10.1.6",
     "@angular/core": "^10.1.6",
@@ -8,5 +8,9 @@
   },
   "dependencies": {
     "tslib": "^2.0.0"
-  }
+  },
+    "repository": {
+        "type" : "git",
+        "url" : "https://github.com/BilousD/angular-wysiwyg-editor-lib.git"
+    }
 }
