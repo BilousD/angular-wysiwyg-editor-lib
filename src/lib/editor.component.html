@@ -1,0 +1,75 @@
+<div class="editor-div">
+    <button mat-stroked-button class="editor-single-button" [matMenuTriggerFor]="menu"><mat-icon aria-hidden="false">create</mat-icon></button>
+    <mat-menu #menu="matMenu">
+        <button mat-menu-item (click)="block('pre')">
+            <span style="font-family: monospace">Pre</span>
+        </button>
+        <button mat-menu-item (click)="block('p')">Paragraph</button>
+        <button mat-menu-item (click)="block('h1')"><span style="font-size: 2em;">Header 1</span></button>
+        <button mat-menu-item (click)="block('h2')"><span style="font-size: 1.5em;">Header 2</span></button>
+        <button mat-menu-item (click)="block('h3')"><span style="font-size: 1.17em;">Header 3</span></button>
+        <button mat-menu-item (click)="block('h4')"><span>Header 4</span></button>
+        <button mat-menu-item (click)="block('h5')"><span style="font-size: 0.83em;">Header 5</span></button>
+        <button mat-menu-item (click)="block('h6')"><span style="font-size: 0.67em;">Header 6</span></button>
+    </mat-menu>
+
+    <button mat-stroked-button class="editor-button-left" [ngClass]="[boldPressed ? 'button-active' : '']" (click)="tag('b')"><mat-icon aria-hidden="false">format_bold</mat-icon></button>
+    <button mat-stroked-button class="editor-button-right" [ngClass]="[underlinePressed ? 'button-active' : '']" (click)="tag('u')"><mat-icon aria-hidden="false">format_underline</mat-icon></button>
+
+    <button mat-stroked-button class="editor-button-left" (click)="tag('span', ['style', 'background-color: ' + color1.nativeElement.value + ';'])">
+        <mat-icon aria-hidden="false">font_download</mat-icon>
+    </button>
+    <button mat-stroked-button class="editor-button-right" (click)="c1.click()"><mat-icon aria-hidden="false">arrow_drop_down</mat-icon></button>
+    <input #c1 type="color" style="height: 0; width: 0; visibility: hidden">
+
+    <button mat-stroked-button class="editor-button-left" (click)="tag('font', ['color', color2.nativeElement.value])">
+        <mat-icon aria-hidden="false">format_paint</mat-icon>
+    </button>
+    <button mat-stroked-button class="editor-button-right" (click)="c2.click()"><mat-icon aria-hidden="false">arrow_drop_down</mat-icon></button>
+    <input #c2 type="color" style="height: 0; width: 0; visibility: hidden">
+
+    <button mat-stroked-button class="editor-single-button" [matMenuTriggerFor]="fonts">
+        <mat-icon aria-hidden="false">format_size</mat-icon>
+    </button>
+    <mat-menu #fonts="matMenu">
+        <button mat-menu-item (click)="tag('span', ['style', 'font-size: smaller'])">
+            <span style="font-size: smaller">Smaller</span>
+        </button>
+        <button mat-menu-item (click)="tag('span', ['style', 'font-size: small'])">
+            <span style="font-size: small">Small</span>
+        </button>
+        <button mat-menu-item (click)="tag('span', ['style', 'font-size: medium'])">
+            <span style="font-size: medium">Medium</span>
+        </button>
+        <button mat-menu-item (click)="tag('span', ['style', 'font-size: larger'])">
+            <span style="font-size: larger">Larger</span>
+        </button>
+        <button mat-menu-item (click)="tag('span', ['style', 'font-size: large'])">
+            <span style="font-size: large">Large</span>
+        </button>
+        <button mat-menu-item (click)="tag('span', ['style', 'font-size: large'])">
+            Custom
+        </button>
+    </mat-menu>
+    <button mat-stroked-button class="editor-button-left" (click)="tag('sub')"><mat-icon aria-hidden="false">subscript</mat-icon></button>
+    <button mat-stroked-button class="editor-button-right" (click)="tag('sup')"><mat-icon aria-hidden="false">superscript</mat-icon></button>
+
+    <button mat-stroked-button class="editor-single-button" (click)="openDialog()"><mat-icon aria-hidden="false">help</mat-icon></button>
+</div>
+<div class="editor-editable" contenteditable="true" #editor (keypress)="onKeyPress($event)"
+     (keydown)="onKeyDown($event)" (dragover)="allowDrop($event)" (drop)="drop($event)" (click)="onClick($event)">
+
+</div>
+
+<pre>{{textAsHTML}}</pre>
+
+<div class="editor-image-controls" [hidden]="imageControlsHidden" [style.top.px]="imageControlsTop" [style.left.px]="imageControlsLeft">
+    <mat-card class="editor-image-controls-card">
+        <input class="editor-image-controls-input" placeholder="↕" #ich>
+        <input class="editor-image-controls-input" placeholder="↔" #icw>
+        <button mat-stroked-button (click)="resizeImage(ich.value, icw.value)"><mat-icon aria-hidden="false">transform</mat-icon></button>
+        <button mat-stroked-button (click)="floatImage('left', '0 15px 0 0')">float_left</button>
+        <button mat-stroked-button (click)="floatImage('right', '0 0 0 15px')">float_right</button>
+        <button mat-stroked-button (click)="floatImage('none', '0 0 0 0')">remove_float</button>
+    </mat-card>
+</div>

@@ -1,0 +1,57 @@
+:host {
+    height: 100%;
+    max-height: 80vh;
+    width: 100%;
+    max-width: 80vw;
+}
+.editor-div {
+    display: flex;
+}
+.editor-single-button {
+    margin: 8px 5px 8px 5px;
+}
+.editor-button-right {
+    border-left-width: 0;
+    border-radius: 0 6px 6px 0;
+    margin: 8px 5px 8px 0;
+}
+.editor-button-left {
+    border-radius: 6px 0 0 6px;
+    margin: 8px 0 8px 5px;
+}
+.editor-button-middle {
+    border-radius: 0;
+}
+.editor-editable {
+    border: 1px solid black;
+    padding: 3px;
+    width: 100%;
+    height: 100%;
+    overflow: scroll;
+}
+.button-active {
+    background-color: lightgray;
+}
+.editor-image-controls {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1060;
+    box-shadow: 0 5px 10px rgba(0,0,0,.2)
+}
+.editor-image-controls-card {
+    padding: 0;
+}
+.editor-image-controls-input {
+    width: 20px;
+    margin: 7px 0 7px 7px;
+}
+.editor-help {
+    display: flex;
+    align-content: center;
+    background: rgba(80, 80, 80, 0.3);
+    z-index: 1080;
+    position: center;
+    width: 100vw;
+    height: 100vh;
+}
