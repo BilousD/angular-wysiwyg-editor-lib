@@ -5,15 +5,13 @@ import {MatMenuModule} from '@angular/material/menu';
 import {MatIconModule} from '@angular/material/icon';
 import {CommonModule} from '@angular/common';
 import {MatCardModule} from '@angular/material/card';
-import {HelpDialogComponent} from './help-dialog.component';
 import {MatDialogModule} from '@angular/material/dialog';
 
 
 
 @NgModule({
   declarations: [
-      EditorComponent,
-      HelpDialogComponent
+      EditorComponent
   ],
     imports: [
         MatButtonModule,
