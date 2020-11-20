@@ -14,7 +14,7 @@ import {HelpingTools} from './helping-tools';
 import {MatDialog} from '@angular/material/dialog';
 
 @Component({
-    selector: 'app-test-editor',
+    selector: 'lib-wysiwyg-editor',
     templateUrl: './editor.component.html',
     styleUrls: ['./editor.component.scss']
 })
@@ -28,7 +28,7 @@ export class EditorComponent implements AfterViewInit {
     replaceBR = '<br>\n';
 
     @ViewChild('editor') editorElement: ElementRef<HTMLDivElement>;
-    @Input() placeholder = '';
+    @Input() startingHTMLValue = '';
     @ViewChild('c1') color1: ElementRef<HTMLInputElement>;
     @ViewChild('c2') color2: ElementRef<HTMLInputElement>;
     // @Output() output: EventEmitter<any> = new EventEmitter<any>();
@@ -49,8 +49,8 @@ export class EditorComponent implements AfterViewInit {
 
     ngAfterViewInit(): void {
         this.selection = document.getSelection();
-        if (this.placeholder) {
-            this.editorElement.nativeElement.innerHTML = this.placeholder;
+        if (this.startingHTMLValue) {
+            this.editorElement.nativeElement.innerHTML = this.startingHTMLValue;
         }
         this.tools = new HelpingTools(this.editorElement.nativeElement);
         console.log(this.editorElement);
