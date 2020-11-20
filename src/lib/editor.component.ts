@@ -12,10 +12,9 @@ import {
 } from '@angular/core';
 import {HelpingTools} from './helping-tools';
 import {MatDialog} from '@angular/material/dialog';
-import {HelpDialogComponent} from './help-dialog.component';
 
 @Component({
-    selector: 'lib-wysiwyg-editor',
+    selector: 'app-test-editor',
     templateUrl: './editor.component.html',
     styleUrls: ['./editor.component.scss']
 })
@@ -23,7 +22,10 @@ export class EditorComponent implements AfterViewInit {
 
     tools: HelpingTools;
     selection: Selection;
-    textAsHTML = '';
+    innerHTMLasString = '';
+    regexParagraph = /<\/p*(h\d)*(pre)*(blockquote)*>/g;
+    regexBR = /<br>/g;
+    replaceBR = '<br>\n';
 
     @ViewChild('editor') editorElement: ElementRef<HTMLDivElement>;
     @Input() placeholder = '';
@@ -40,7 +42,8 @@ export class EditorComponent implements AfterViewInit {
     imageControlsLeft = 0;
     clickedImage: HTMLImageElement;
 
-    helpDIV = true;
+    @ViewChild('helpDIV') helpDIV: ElementRef<HTMLDivElement>;
+    helpPressed = false;
 
     constructor(private dialog: MatDialog) {}
 
@@ -64,11 +67,12 @@ export class EditorComponent implements AfterViewInit {
         });
     }
 
-    openDialog(): void {
-        this.dialog.open(HelpDialogComponent);
+    helpToggle(): void {
+        this.helpPressed = !this.helpPressed;
     }
 
     onKeyPress(event: KeyboardEvent): void {
+        if (this.helpPressed) { return; }
         if (event.key === 'Enter') {
             event.preventDefault();
             const s = document.getSelection();
@@ -78,15 +82,17 @@ export class EditorComponent implements AfterViewInit {
             const r = new Range();
             const range = s.getRangeAt(0);
             let a = range.startContainer;
-            const anchorOffset = range.startOffset;
+            let anchorOffset = range.startOffset;
             let f = range.endContainer;
-            const focusOffset = range.endOffset;
+            let focusOffset = range.endOffset;
             let ca = range.commonAncestorContainer;
             const collapsed = range.collapsed;
 
             const newParagraph = this.tools.makeBlock();
             if (newParagraph) {
                 ca = newParagraph;
+                a = a.firstChild;
+                f = f.firstChild;
             }
             // TODO br
             // TODO if blockquote - ????????
@@ -94,8 +100,19 @@ export class EditorComponent implements AfterViewInit {
             let trackNode = document.createTextNode('');
 
             while (a.nodeType !== 3) {
-                if (a.firstChild) {
-                    a = a.firstChild;
+                // if children - select child based on offset
+                // offset 1 - after 1-st element, if text - select text with 0 offset
+                //                                  else make text and select it
+                if (a.childNodes) {
+                    // select next node
+                    if (anchorOffset >= a.childNodes.length) {
+                        const ne = new Text('');
+                        a.appendChild(ne);
+                        a = ne;
+                    } else {
+                        a = a.childNodes[anchorOffset];
+                    }
+                    anchorOffset = 0;
                 } else {
                     if (a.nodeName === 'br' || a.nodeName === 'img') {
                         const ne = new Text('');
@@ -108,8 +125,16 @@ export class EditorComponent implements AfterViewInit {
                 }
             }
             while (f.nodeType !== 3) {
-                if (f.lastChild) {
-                    f = f.lastChild;
+                if (f.childNodes) {
+                    // select next node
+                    if (focusOffset >= f.childNodes.length) {
+                        const ne = new Text('');
+                        f.appendChild(ne);
+                        f = ne;
+                    } else {
+                        f = f.childNodes[focusOffset];
+                    }
+                    focusOffset = 0;
                 } else {
                     if (f.nodeName === 'br' || f.nodeName === 'img') {
                         const ne = new Text('');
@@ -160,15 +185,11 @@ export class EditorComponent implements AfterViewInit {
         // this.output.emit(this.editorElement.nativeElement.innerHTML
         //     .replace(/<\/p*(h\d)*(pre)*(blockquote)*>/g, '$&\n')
         //     .replace(/<br>/g, '<br>\n'));
-        this.textAsHTML = this.editorElement.nativeElement.innerHTML
-            .replace(/<\/p*(h\d)*(pre)*(blockquote)*>/g, '$&\n')
-            .replace(/<br>/g, '<br>\n');
-    }
-    submit(): void {
-        console.log(document.getSelection());
+        this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
 
     onKeyDown(event: KeyboardEvent): void {
+        if (this.helpPressed) { return; }
         // console.log(event);
         // TODO using deprecated thing
         const char = String.fromCharCode(event.charCode);
@@ -188,8 +209,10 @@ export class EditorComponent implements AfterViewInit {
             console.log('ctrl+z');
             console.log(event);
         }
+        this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
     block(tag: string): void {
+        if (this.helpPressed) { return; }
         // check selection to be inside div
         const s = document.getSelection();
         if (!this.tools.isInDiv(s)) {
@@ -233,348 +256,14 @@ export class EditorComponent implements AfterViewInit {
 
         document.getSelection().removeAllRanges();
         document.getSelection().addRange(range);
-        this.textAsHTML = this.editorElement.nativeElement.innerHTML
-            .replace(/<\/p*(h\d)*(pre)*(blockquote)*>/g, '$&\n')
-            .replace(/<br>/g, '<br>\n');
-        // this.output.emit(this.editorElement.nativeElement.innerHTML
-        //     .replace(/<\/p*(h\d)*(pre)*(blockquote)*>/g, '$&\n')
-        //     .replace(/<br>/g, '<br>\n'));
-    }
-
-    bold(tag, attribute?): void {
-        // check selection to be inside div
-        const s = document.getSelection();
-        if (!this.tools.isInDiv(s)) {
-            return null;
-        }
-        const r = s.getRangeAt(0);
-        let a = r.startContainer;
-        const f = r.endContainer;
-        const startOffset = r.startOffset;
-        let rangeStart = {node: a, offset: r.startOffset};
-        let rangeEnd = {node: f, offset: r.endOffset};
-
-        // Messes with nodes, save everything before
-        if ((a as Text).length !== 0) {
-            this.tools.cleanAndNormalize();
-        }
-        if (r.collapsed) {
-            let txt = new Text('');
-            if ((a as Text).length === 0) {
-                txt = a as Text;
-            } else {
-                a = (a as Text).splitText(startOffset);
-            }
-            const tp = this.tools.getParent(a, tag, attribute);
-            if (tp) {
-                // </tag> MOVE CARET HERE <tag>
-                // 2 COPIES - 1 FOR '' txt NODE, 1 FOR RIGHT SIBLINGS
-                // TODO a.ps could be null?
-                let pa = a.parentNode;
-                // if a = '', and tp has only one child - remove tp keeping child
-                // if a = '', and tp has multiple children - everything already split into 3, ( <b> 123 <u></u> 456 </b> )
-                // original -> [ 123 ] <u> [ 456 ] <- cloned
-                this.tools.split(a.previousSibling, tp.parentNode);
-
-                let ne: Node = txt;
-                while (!pa.isSameNode(tp)) {
-                    const pc = pa.cloneNode(false);
-                    pc.appendChild(ne);
-                    ne = pc;
-                    pa = pa.parentNode;
-                }
-                // TODO tp.nextSibling should be clone of tp
-                tp.parentNode.insertBefore(ne, tp.nextSibling);
-            } else {
-                const ne = this.tools.createElement(tag, attribute);
-                a.parentNode.insertBefore(ne, a);
-                ne.appendChild(txt);
-            }
-            this.caretInZeroText = true;
-            const range2 = new Range();
-            range2.setStart(txt, 0);
-            range2.collapse(true);
-            s.removeAllRanges();
-            s.addRange(range2);
-            return;
-        }
-        // TODO if selection type caret or something - just insert <tag></tag> after cleaning, and put caret inside
-
-        // const sp = this.sameParent(a, f);
-        const sp = r.commonAncestorContainer;
-        if (a.isSameNode(f)){
-            let pa = a.parentNode;
-            if (this.tools.getParent(a, tag, attribute)) {
-                let nn = this.tools.createElement(tag, attribute);
-                const t = (a as Text).splitText(r.startOffset);
-                nn.appendChild(a);
-                pa.insertBefore(nn, t);
-                if (r.endOffset !== t.length) {
-                    const t2 = t.splitText(r.endOffset);
-                    nn = this.tools.createElement(tag, attribute);
-                    nn.appendChild(t2);
-                    pa.appendChild(nn);
-                }
-                rangeStart = {node: t, offset: 0};
-                rangeEnd = {node: t, offset: t.length};
-                const p = this.tools.getParent(t, tag, attribute);
-
-                while (!pa.isSameNode(p)) {
-                    if (pa.previousSibling) {
-                        // put all previous siblings into tag
-                        nn = this.tools.createElement(tag, attribute);
-                        // TODO change to insertFirst()
-                        nn.appendChild(pa.previousSibling);
-                        while (pa.previousSibling) {
-                            nn.insertBefore(pa.previousSibling, nn.firstChild);
-                        }
-                        pa.parentNode.insertBefore(nn, pa);
-                    }
-                    if (pa.nextSibling) {
-                        nn = this.tools.createElement(tag, attribute);
-                        while (pa.nextSibling) {
-                            nn.appendChild(pa.nextSibling);
-                        }
-                        pa.parentNode.appendChild(nn);
-                    }
-                    const temp = pa.parentNode;
-                    this.tools.removeNodeSavingChildren(pa);
-                    pa = temp;
-                }
-                this.tools.removeNodeSavingChildren(pa);
-
-            } else {
-                const nn = this.tools.createElement(tag, attribute);
-                const t = (a as Text).splitText(r.startOffset);
-                if (r.endOffset === t.length) {
-                    // <b> |1| <u> 2345 </u> </b>
-                    // if (next sibling - insert before)
-                    const sibling = t.nextSibling;
-                    nn.appendChild(t);
-                    if (sibling) {
-                        pa.insertBefore(nn, sibling);
-                    } else {
-                        pa.appendChild(nn);
-                    }
-                } else {
-                    const t2 = t.splitText(r.endOffset);
-                    nn.appendChild(t);
-                    pa.insertBefore(nn, t2);
-                }
-                rangeStart = {node: t, offset: 0};
-                rangeEnd = {node: t, offset: t.length};
-            }
-        } else {
-            if (r.startOffset > 0) {
-                a = (a as Text).splitText(r.startOffset);
-                rangeStart = {node: a, offset: 0};
-            }
-            if (r.endOffset < (f as Text).length) {
-                (f as Text).splitText(r.endOffset);
-                rangeEnd = {node: f, offset: (f as Text).length};
-            }
-            // check if anyone between doesnt have <b> (if everyone have - invert <b>)
-            // bold everything in between a and f
-            // check if has bold inside
-            if (this.tools.isSelectionCoveredInTag(a, f, sp, tag, attribute)) {
-                let ap = a.parentNode;
-                if (a.previousSibling) {
-                    const ne = this.tools.createElement(tag, attribute);
-                    ne.appendChild(a.previousSibling);
-                    while (a.previousSibling) {
-                        ne.insertBefore(a.previousSibling, ne.firstChild);
-                    }
-                    ap.insertBefore(ne, a);
-                }
-                let fp = f.parentNode;
-                if (f.nextSibling) {
-                    const ne = this.tools.createElement(tag, attribute);
-                    while (f.nextSibling) {
-                        ne.appendChild(f.nextSibling);
-                    }
-                    fp.appendChild(ne);
-                }
-                const at = this.tools.getParent(a, tag, attribute);
-                const ft = this.tools.getParent(f, tag, attribute);
-                while (!ap.isSameNode(at)) {
-                    if (ap.previousSibling) {
-                        const ne = this.tools.createElement(tag, attribute);
-                        ne.appendChild(ap.previousSibling);
-                        while (ap.previousSibling) {
-                            ne.insertBefore(ap.previousSibling, ne.firstChild);
-                        }
-                        ap.parentNode.insertBefore(ne, ap);
-                    }
-                    ap = ap.parentNode;
-                }
-                while (!fp.isSameNode(ft)) {
-                    if (fp.nextSibling) {
-                        const ne = this.tools.createElement(tag, attribute);
-                        while (fp.nextSibling) {
-                            ne.appendChild(fp.nextSibling);
-                        }
-                        fp.parentNode.appendChild(ne);
-                    }
-                    fp = fp.parentNode;
-                }
-                if (at.isSameNode(ft)) {
-                    while (ft.firstChild) {
-                        ft.parentNode.insertBefore(ft.firstChild, ft);
-                    }
-                    ft.parentNode.removeChild(ft);
-                } else {
-                    // if not covered in same tag - common ancestor is closer to root
-                    // while 1 up is not CA (sp) - check for next sibling, and remove <tag> from them
-                    while (!ap.parentNode.isSameNode(sp)) {
-                        while (ap.nextSibling) {
-                            // TODO if sibling tag itself
-                            const temp = ap.nextSibling;
-                            ap = (ap.nextSibling as unknown as Node & ParentNode);
-                            this.tools.removeTagNodeOrTagFromChildren(temp, tag, attribute);
-                        }
-                        ap = ap.parentNode;
-                    }
-                    // now ap - child of CA, one of next siblings contains fp, iterate fp same until fp is child of CA
-                    while (!fp.parentNode.isSameNode(sp)) {
-                        while (fp.previousSibling) {
-                            const temp = fp.previousSibling;
-                            fp = (fp.previousSibling as unknown as Node & ParentNode);
-                            this.tools.removeTagNodeOrTagFromChildren(temp, tag, attribute);
-                        }
-                        fp = fp.parentNode;
-                    }
-                    // now ap and fp should be siblings, so check if anyone between and remove tags for them
-                    let ns = ap.nextSibling;
-                    while (!ns.isSameNode(fp)) {
-                        const collection = (ns as Element).getElementsByTagName(tag);
-                        // tslint:disable-next-line:prefer-for-of
-                        for (let i = 0; i < collection.length; i++) {
-                            this.tools.removeNodeSavingChildren(collection[i]);
-                        }
-                        ns = ns.nextSibling;
-                    }
-
-                    while (ft.firstChild) {
-                        ft.parentNode.insertBefore(ft.firstChild, ft);
-                    }
-                    ft.parentNode.removeChild(ft);
-                    while (at.firstChild) {
-                        at.parentNode.insertBefore(at.firstChild, at);
-                    }
-                    at.parentNode.removeChild(at);
-                }
-            } else {
-                // TODO siblings for a etc.
-                // for middle:
-                // search for <tag> child -> get sibling -> get inside children -> append to sibling inside children
-                // for a, f:                        (for f - previous)
-                // getParent(<tag>) -> if has - check for next siblings -> extend tag to siblings inside block
-                //                  -> nothing - if has previous siblings -> put tag there, up 1, check next siblings, put tag
-                //                                  no previous - check if 1 up has previous
-                let p = this.tools.getParent(a, tag, attribute);
-                if (p) {
-                    if (p.previousSibling) {
-                        while (p.nextSibling && p !== this.tools.getChild(f, sp)) {
-                            p.appendChild(p.nextSibling);
-                        }
-                        while (p !== sp) {
-                            if (p.nextSibling) { p = this.tools.joinRightOld(p.nextSibling, sp, tag, attribute); }
-                            p = p.parentNode;
-                        }
-                    } else {
-                        // check if on same level (or lower) as p ????
-
-                        // join right creates new element
-                        // so removing p after
-
-                        // TODO removes node, but previous siblings become uncovered
-                        // removing node p to put it higher, but if it is highest possible point, it just removes
-
-                        // and then using this node to access other ---- not anymore
-                        this.tools.joinRightOld(p, this.tools.getChild(a, sp), tag, attribute);
-
-                        this.tools.removeNodeSavingChildren(p);
-                    }
-                } else {
-                    // if has no parent-tag - check if parent node is sp, if it is - cover only it
-                    // TODO Same but for left
-                    if (a.parentNode.isSameNode(sp)) {
-                        const ne = this.tools.createElement(tag, attribute);
-                        const pa = a.parentNode;
-                        // could be useless
-                        if (a.nextSibling) {
-                            const next = a.nextSibling;
-                            ne.appendChild(a);
-                            pa.insertBefore(ne, next);
-                        } else {
-                            pa.appendChild(ne);
-                        }
-                    } else {
-                        this.tools.joinRightOld(a, sp, tag, attribute);
-                    }
-                }
-                // middle (full cover)
-                // getChild returns child of sp, so next sibling could contain end point
-                // so join right should cover everything UNDER getChild()
-                let ns = this.tools.getChild(a, sp).nextSibling;
-                while (ns && ns !== this.tools.getChild(f, sp)) {
-                    // TODO ns could be <b> ?
-                    // TODO if ns is block ?
-                    if (ns.nodeType === 1) {
-                        const collection = (ns as Element).getElementsByTagName(tag);
-                        // tslint:disable-next-line:prefer-for-of
-                        for (let i = 0; i < collection.length; i++) {
-                            this.tools.removeNodeSavingChildren(collection[i]);
-                        }
-                    }
-                    const ne = this.tools.createElement(tag, attribute);
-                    while (ns.firstChild) {
-                        ne.appendChild(ns.firstChild);
-                    }
-                    ns.appendChild(ne);
-                    ns = ns.nextSibling;
-                }
-
-                p = this.tools.getParent(f, tag, attribute);
-                if (p) {
-                    if (p.nextSibling) {
-                        while (p.previousSibling) {
-                            p.appendChild(p.previousSibling);
-                        }
-                        while (p !== sp) {
-                            if (p.nextSibling) { p = this.tools.joinLeft(p.nextSibling, sp, tag, attribute); }
-                            p = p.parentNode;
-                        }
-                    } else {
-                        const changed = this.tools.joinLeft(p, this.tools.getChild(p, sp), tag, attribute);
-                        if (!changed.isSameNode(p)) {
-                            this.tools.removeNodeSavingChildren(p);
-                        }
-                    }
-                } else {
-                    this.tools.joinLeft(f, sp, tag, attribute);
-                }
-            }
-            // range.setStart(a, 0);
-            // range.setEnd(f, (f as Text).length);
-        }
-        // TODO fix range
-        this.tools.cleanAndNormalize();
-        const range = new Range();
-        range.setStart(rangeStart.node, rangeStart.offset);
-        range.setEnd(rangeEnd.node, rangeEnd.offset);
-        document.getSelection().removeAllRanges();
-        document.getSelection().addRange(range);
-
-        this.textAsHTML = this.editorElement.nativeElement.innerHTML
-            .replace(/<\/p*(h\d)*(pre)*(blockquote)*>/g, '$&\n')
-            .replace(/<br>/g, '<br>\n');
+        this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
         // this.output.emit(this.editorElement.nativeElement.innerHTML
         //     .replace(/<\/p*(h\d)*(pre)*(blockquote)*>/g, '$&\n')
         //     .replace(/<br>/g, '<br>\n'));
     }
 
     tag(tag, attribute?): void {
+        if (this.helpPressed) { return; }
         // check selection to be inside div
         const s = document.getSelection();
 
@@ -592,8 +281,16 @@ export class EditorComponent implements AfterViewInit {
         }
 
         while (a.nodeType !== 3) {
-            if (a.firstChild) {
-                a = a.firstChild;
+            if (a.childNodes) {
+                // select next node
+                if (startOffset >= a.childNodes.length) {
+                    const ne = new Text('');
+                    a.appendChild(ne);
+                    a = ne;
+                } else {
+                    a = a.childNodes[startOffset];
+                }
+                startOffset = 0;
             } else {
                 const ne = new Text('');
                 if (a.nodeName === 'br' || a.nodeName === 'img') {
@@ -606,8 +303,16 @@ export class EditorComponent implements AfterViewInit {
             }
         }
         while (f.nodeType !== 3) {
-            if (f.lastChild) {
-                f = f.lastChild;
+            if (f.childNodes) {
+                // select next node
+                if (endOffset >= f.childNodes.length) {
+                    const ne = new Text('');
+                    f.appendChild(ne);
+                    f = ne;
+                } else {
+                    f = f.childNodes[endOffset];
+                }
+                endOffset = 0;
             } else {
                 const ne = new Text('');
                 if (f.nodeName === 'br' || f.nodeName === 'img') {
@@ -834,22 +539,23 @@ export class EditorComponent implements AfterViewInit {
         document.getSelection().removeAllRanges();
         document.getSelection().addRange(range);
 
-        this.textAsHTML = this.editorElement.nativeElement.innerHTML
-            .replace(/<\/p*(h\d)*(pre)*(blockquote)*>/g, '$&\n')
-            .replace(/<br>/g, '<br>\n');
+        this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
         // this.output.emit(this.editorElement.nativeElement.innerHTML
         //     .replace(/<\/p*(h\d)*(pre)*(blockquote)*>/g, '$&\n')
         //     .replace(/<br>/g, '<br>\n'));
     }
 
     getInnerHTML(): string {
-        return this.editorElement.nativeElement.innerHTML;
+        return this.innerHTMLasString;
     }
+
     allowDrop(ev): void {
+        if (this.helpPressed) { return; }
         ev.preventDefault();
     }
     drop(ev): void {
         ev.preventDefault();
+        if (this.helpPressed) { return; }
         const data = ev.dataTransfer.getData('text');
         if (document.getElementById(data)) {
             ev.target.appendChild(document.getElementById(data));
@@ -861,12 +567,14 @@ export class EditorComponent implements AfterViewInit {
             img.style.width = 'auto';
             ev.target.appendChild(img);
         }
+        this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
     drag(ev): void {
         ev.dataTransfer.setData('text', ev.target.id);
     }
 
     onClick(event: MouseEvent): void {
+        if (this.helpPressed) { return; }
         const target = event.target as Element;
         if (target instanceof HTMLImageElement) {
             this.imageControlsHidden = false;
@@ -879,9 +587,11 @@ export class EditorComponent implements AfterViewInit {
         // if clicked on image - change div position to click position, and make div visible
         // also remember image that got clicked on (change remembered on each image click)
         // if after clicked on div -
+        this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
 
     resizeImage(height, width): void {
+        if (this.helpPressed) { return; }
         if (height !== '0' && !isNaN(height)) {
             this.clickedImage.style['max-height'] = height + 'px';
         } else {
@@ -892,10 +602,13 @@ export class EditorComponent implements AfterViewInit {
         } else {
             this.clickedImage.style['max-width'] = width;
         }
+        this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
 
     floatImage(float, margin): void {
+        if (this.helpPressed) { return; }
         this.clickedImage.style.float = float;
         this.clickedImage.style.margin = margin;
+        this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
 }

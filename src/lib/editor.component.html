@@ -54,16 +54,78 @@
     <button mat-stroked-button class="editor-button-left" (click)="tag('sub')"><mat-icon aria-hidden="false">subscript</mat-icon></button>
     <button mat-stroked-button class="editor-button-right" (click)="tag('sup')"><mat-icon aria-hidden="false">superscript</mat-icon></button>
 
-    <button mat-stroked-button class="editor-single-button" (click)="openDialog()"><mat-icon aria-hidden="false">help</mat-icon></button>
+    <button mat-stroked-button class="editor-single-button" (click)="helpToggle()"><mat-icon aria-hidden="false">help</mat-icon></button>
 </div>
-<div class="editor-editable" contenteditable="true" #editor (keypress)="onKeyPress($event)"
+
+
+<div class="editor-editable" [hidden]="helpPressed" [contentEditable]="!helpPressed" #editor (keypress)="onKeyPress($event)"
      (keydown)="onKeyDown($event)" (dragover)="allowDrop($event)" (drop)="drop($event)" (click)="onClick($event)">
 
 </div>
 
-<pre>{{textAsHTML}}</pre>
+<div *ngIf="helpPressed">
+    <button mat-stroked-button class="editor-single-button"><mat-icon aria-hidden="false">create</mat-icon></button>
+    <span> - change paragraph style</span>
+    <!-- STYLES BUTTON -->
+    <br>
 
-<div class="editor-image-controls" [hidden]="imageControlsHidden" [style.top.px]="imageControlsTop" [style.left.px]="imageControlsLeft">
+    <button mat-stroked-button class="editor-single-button"><mat-icon aria-hidden="false">format_bold</mat-icon></button>
+    <span> - set selection format as <b>bold</b></span>
+    <br>
+    <button mat-stroked-button class="editor-single-button"><mat-icon aria-hidden="false">format_underline</mat-icon></button>
+    <span> - set selection format as <u>underline</u></span>
+    <br>
+    <!-- BOLD UNDERLINE BUTTON -->
+
+    <button mat-stroked-button class="editor-single-button"><mat-icon aria-hidden="false">font_download</mat-icon></button>
+    <span> - <span style="background-color: yellow">highlight</span> selection</span>
+    <br>
+    <!-- HIGHLIGHTING TEXT BUTTON -->
+    <button mat-stroked-button class="editor-single-button"><mat-icon aria-hidden="false">format_paint</mat-icon></button>
+    <span> - change <font color="#8b0000">color</font> of a selected text</span>
+    <br>
+    <!-- COLORING TEXT BUTTON -->
+    <button mat-stroked-button class="editor-single-button"><mat-icon aria-hidden="false">arrow_drop_down</mat-icon></button>
+    <span> - choose color</span>
+    <br>
+    <!-- COLOR CHOOSING BUTTON -->
+
+    <button mat-stroked-button class="editor-single-button"><mat-icon aria-hidden="false">format_size</mat-icon></button>
+    <span> - change selected text size</span>
+    <br>
+    <!-- SIZE TEXT BUTTON -->
+
+    <button mat-stroked-button class="editor-single-button"><mat-icon aria-hidden="false">subscript</mat-icon></button>
+    <span> - make selected text <sub>subscript</sub></span>
+    <br>
+    <!-- SUBSCRIPT BUTTON -->
+    <button mat-stroked-button class="editor-single-button"><mat-icon aria-hidden="false">superscript</mat-icon></button>
+    <span> - make selected text <sup>superscript</sup></span>
+    <br>
+    <!-- SUPERSCRIPT BUTTON -->
+    <h3>Image controls</h3>
+    <input class="editor-image-controls-input" placeholder="↕">
+    <span> - image height</span>
+    <br>
+    <input class="editor-image-controls-input" placeholder="↔">
+    <span> - image width</span>
+    <br>
+    <button mat-stroked-button><mat-icon aria-hidden="false">transform</mat-icon></button>
+    <span> - change image size</span>
+    <br>
+    <button mat-stroked-button>float_left</button>
+    <span> - make image float left</span>
+    <br>
+    <button mat-stroked-button>float_right</button>
+    <span> - make image float right</span>
+    <br>
+    <button mat-stroked-button>remove_float</button>
+    <span> - remove image float</span>
+</div>
+
+<pre>{{ innerHTMLasString.replace(regexParagraph, '$&\n').replace(regexBR, replaceBR) }}</pre>
+
+<div class="editor-image-controls" *ngIf="!imageControlsHidden" [style.top.px]="imageControlsTop" [style.left.px]="imageControlsLeft">
     <mat-card class="editor-image-controls-card">
         <input class="editor-image-controls-input" placeholder="↕" #ich>
         <input class="editor-image-controls-input" placeholder="↔" #icw>
@@ -73,3 +135,4 @@
         <button mat-stroked-button (click)="floatImage('none', '0 0 0 0')">remove_float</button>
     </mat-card>
 </div>
+
