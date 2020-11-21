@@ -59,7 +59,8 @@
 
 
 <div class="editor-editable" [hidden]="helpPressed" [contentEditable]="!helpPressed" #editor (keypress)="onKeyPress($event)"
-     (keydown)="onKeyDown($event)" (dragover)="allowDrop($event)" (drop)="drop($event)" (click)="onClick($event)">
+     (keydown)="onKeyDown($event)" (dragover)="allowDrop($event)" (drop)="drop($event)" (click)="onClick($event)"
+     (dragstart)="dragStart($event)">
 
 </div>
 
@@ -127,8 +128,8 @@
 
 <div class="editor-image-controls" *ngIf="!imageControlsHidden" [style.top.px]="imageControlsTop" [style.left.px]="imageControlsLeft">
     <mat-card class="editor-image-controls-card">
-        <input class="editor-image-controls-input" placeholder="↕" #ich>
-        <input class="editor-image-controls-input" placeholder="↔" #icw>
+        <input class="editor-image-controls-input" placeholder="↕" #ich [value]="imageHeightInput">
+        <input class="editor-image-controls-input" placeholder="↔" #icw [value]="imageWidthInput">
         <button mat-stroked-button (click)="resizeImage(ich.value, icw.value)"><mat-icon aria-hidden="false">transform</mat-icon></button>
         <button mat-stroked-button (click)="floatImage('left', '0 15px 0 0')">float_left</button>
         <button mat-stroked-button (click)="floatImage('right', '0 0 0 15px')">float_right</button>

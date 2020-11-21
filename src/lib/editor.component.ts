@@ -28,7 +28,7 @@ export class EditorComponent implements AfterViewInit {
     replaceBR = '<br>\n';
 
     @ViewChild('editor') editorElement: ElementRef<HTMLDivElement>;
-    @Input() startingHTMLValue = '';
+    @Input() placeholder = '';
     @ViewChild('c1') color1: ElementRef<HTMLInputElement>;
     @ViewChild('c2') color2: ElementRef<HTMLInputElement>;
     // @Output() output: EventEmitter<any> = new EventEmitter<any>();
@@ -40,6 +40,8 @@ export class EditorComponent implements AfterViewInit {
     imageControlsHidden = true;
     imageControlsTop = 0;
     imageControlsLeft = 0;
+    imageHeightInput = '';
+    imageWidthInput = '';
     clickedImage: HTMLImageElement;
 
     @ViewChild('helpDIV') helpDIV: ElementRef<HTMLDivElement>;
@@ -49,8 +51,8 @@ export class EditorComponent implements AfterViewInit {
 
     ngAfterViewInit(): void {
         this.selection = document.getSelection();
-        if (this.startingHTMLValue) {
-            this.editorElement.nativeElement.innerHTML = this.startingHTMLValue;
+        if (this.placeholder) {
+            this.editorElement.nativeElement.innerHTML = this.placeholder;
         }
         this.tools = new HelpingTools(this.editorElement.nativeElement);
         console.log(this.editorElement);
@@ -91,8 +93,12 @@ export class EditorComponent implements AfterViewInit {
             const newParagraph = this.tools.makeBlock();
             if (newParagraph) {
                 ca = newParagraph;
-                a = a.firstChild;
-                f = f.firstChild;
+                if (a.isSameNode(this.editorElement.nativeElement)) {
+                    a = a.firstChild;
+                }
+                if (f.isSameNode(this.editorElement.nativeElement)) {
+                    f = f.firstChild;
+                }
             }
             // TODO br
             // TODO if blockquote - ????????
@@ -100,9 +106,6 @@ export class EditorComponent implements AfterViewInit {
             let trackNode = document.createTextNode('');
 
             while (a.nodeType !== 3) {
-                // if children - select child based on offset
-                // offset 1 - after 1-st element, if text - select text with 0 offset
-                //                                  else make text and select it
                 if (a.childNodes) {
                     // select next node
                     if (anchorOffset >= a.childNodes.length) {
@@ -557,20 +560,35 @@ export class EditorComponent implements AfterViewInit {
         ev.preventDefault();
         if (this.helpPressed) { return; }
         const data = ev.dataTransfer.getData('text');
-        if (document.getElementById(data)) {
-            ev.target.appendChild(document.getElementById(data));
+        const e = document.getElementById(data);
+        if (e) {
+            e.removeAttribute('id');
+            if (ev.target.isSameNode(this.editorElement.nativeElement) &&
+                this.tools.isBlock(this.editorElement.nativeElement.lastChild)) {
+                ev.target.lastChild.appendChild(e);
+            } else {
+                ev.target.appendChild(e);
+            }
         } else {
             const img = new Image();
             img.src = data;
-            img.ondrag = this.drag;
-            img.style.height = 'auto';
-            img.style.width = 'auto';
-            ev.target.appendChild(img);
+            if (ev.target.isSameNode(this.editorElement.nativeElement) &&
+                this.tools.isBlock(this.editorElement.nativeElement.lastChild)) {
+                ev.target.lastChild.appendChild(img);
+            } else {
+                ev.target.appendChild(img);
+            }
         }
         this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
     drag(ev): void {
-        ev.dataTransfer.setData('text', ev.target.id);
+
+    }
+    dragStart(ev): void {
+        if (ev.target.nodeName.toLowerCase() === 'img') {
+            ev.target.id = 'AngularWYSIWYGEditorReservedId';
+            ev.dataTransfer.setData('text', ev.target.id);
+        }
     }
 
     onClick(event: MouseEvent): void {
@@ -578,8 +596,14 @@ export class EditorComponent implements AfterViewInit {
         const target = event.target as Element;
         if (target instanceof HTMLImageElement) {
             this.imageControlsHidden = false;
-            this.imageControlsTop = event.clientY + 5;
-            this.imageControlsLeft = event.clientX + 5;
+            this.imageControlsTop = event.pageY + 5;
+            this.imageControlsLeft = event.pageX + 5;
+            if (target.style['max-height']) {
+                this.imageHeightInput = target.style['max-height'];
+            }
+            if (target.style['max-width']) {
+                this.imageWidthInput = target.style['max-width'];
+            }
             this.clickedImage = target;
         } else {
             this.imageControlsHidden = true;
@@ -592,6 +616,10 @@ export class EditorComponent implements AfterViewInit {
 
     resizeImage(height, width): void {
         if (this.helpPressed) { return; }
+        this.clickedImage.style.height = 'auto';
+        this.clickedImage.style.width = 'auto';
+
+        // TODO something on empty input
         if (height !== '0' && !isNaN(height)) {
             this.clickedImage.style['max-height'] = height + 'px';
         } else {
@@ -612,3 +640,4 @@ export class EditorComponent implements AfterViewInit {
         this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
 }
+
