@@ -28,7 +28,7 @@ export class EditorComponent implements AfterViewInit {
     replaceBR = '<br>\n';
 
     @ViewChild('editor') editorElement: ElementRef<HTMLDivElement>;
-    @Input() placeholder = '';
+    @Input() startingHTMLvalue = '';
     @ViewChild('c1') color1: ElementRef<HTMLInputElement>;
     @ViewChild('c2') color2: ElementRef<HTMLInputElement>;
     // @Output() output: EventEmitter<any> = new EventEmitter<any>();
@@ -51,8 +51,8 @@ export class EditorComponent implements AfterViewInit {
 
     ngAfterViewInit(): void {
         this.selection = document.getSelection();
-        if (this.placeholder) {
-            this.editorElement.nativeElement.innerHTML = this.placeholder;
+        if (this.startingHTMLvalue) {
+            this.editorElement.nativeElement.innerHTML = this.startingHTMLvalue;
         }
         this.tools = new HelpingTools(this.editorElement.nativeElement);
         console.log(this.editorElement);
