@@ -1,5 +1,13 @@
 # AngularWysiwygEditorLib
 
+## Using lib
+
+Install lib `npm i @bilousd/angular-wysiwyg-editor-lib`,  
+import lib in app.module.ts
+`import {AngularWysiwygEditorLibModule} from 'angular-wysiwyg-editor-lib';` and `AngularWysiwygEditorLibModule` inside `imports` array,  
+then put in your html `<app-test-editor startingHTMLvalue="Hello <b>world!</b>"></app-test-editor>`,  
+Use child function `getInnerHTML()` to get created html,`startingHTMLvalue` is not necessary parameter.
+
 This library was generated with [Angular CLI](https://github.com/angular/angular-cli) version 10.1.6.
 
 ## Code scaffolding
