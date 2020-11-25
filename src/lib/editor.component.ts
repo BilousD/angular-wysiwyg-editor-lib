@@ -47,15 +47,16 @@ export class EditorComponent implements AfterViewInit {
     @ViewChild('helpDIV') helpDIV: ElementRef<HTMLDivElement>;
     helpPressed = false;
 
-    constructor(private dialog: MatDialog) {}
+    constructor() {}
 
     ngAfterViewInit(): void {
         this.selection = document.getSelection();
+        console.log('received: ', this.startingHTMLvalue);
         if (this.startingHTMLvalue) {
+
             this.editorElement.nativeElement.innerHTML = this.startingHTMLvalue;
         }
         this.tools = new HelpingTools(this.editorElement.nativeElement);
-        console.log(this.editorElement);
         this.editorElement.nativeElement.addEventListener('selectionchange', () => {
             this.boldPressed = false;
             this.underlinePressed = false;
@@ -209,8 +210,6 @@ export class EditorComponent implements AfterViewInit {
             }
         }
         if (event.ctrlKey && (event.key === 'z')) {
-            console.log('ctrl+z');
-            console.log(event);
         }
         this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
