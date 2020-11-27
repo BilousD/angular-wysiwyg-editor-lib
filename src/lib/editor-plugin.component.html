@@ -1,0 +1,32 @@
+<div contenteditable="false" class="plugin-border" #topDivElement>
+    <div style="display: flex">
+        <span class="plugin-title">Plugin</span>
+        <button mat-icon-button class="plugin-menu-button" aria-label="Plugin control menu" [matMenuTriggerFor]="menu">
+            <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="removePlugin()">
+                <mat-icon>delete_forever</mat-icon>
+                <span>Remove</span>
+            </button>
+        </mat-menu>
+    </div>
+    <div style="display: flex">
+        <form #myForm="ngForm">
+            <mat-form-field appearance="standard">
+                <mat-label>Plugins:</mat-label>
+                <mat-select [(value)]="selected">
+                    <mat-option [value]="param" *ngFor="let param of params">{{ param.selector }}</mat-option>
+                </mat-select>
+            </mat-form-field>
+            <label class="plugin-label" *ngIf="selected">
+                <input *ngFor="let attrib of selected.attributes"
+                       [placeholder]="attrib"
+                       [name]="attrib"
+                       [ngModel]="getAttribute(attrib)">
+            </label>
+            <!-- <button mat-raised-button style="margin-left: auto" (click)="save(myForm)">Save</button> -->
+        </form>
+    </div>
+    <div contenteditable="true" class="plugin-editable-area" #editable>{{(plugin)?plugin.innerHTML:''}}</div>
+</div>

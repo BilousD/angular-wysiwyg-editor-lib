@@ -590,8 +590,9 @@ export class HelpingTools {
      * @private
      */
     isInDiv(s: Selection): boolean {
-        // TODO use range.comparePoint() to check if in div
+        // TODO use range.comparePoint() to check if in div?
         if (this.editorElement.contains(s.anchorNode)) {
+            // if anchor is inside editor-plugin (has parent?)
             if (!this.editorElement.contains(s.focusNode)) {
                 const r = document.createRange();
                 r.setStart(s.anchorNode, s.anchorOffset);
@@ -606,6 +607,18 @@ export class HelpingTools {
                 s.removeAllRanges();
                 s.addRange(r);
                 return true;
+            }
+            const range = document.createRange();
+            // @ts-ignore
+            for (const el of this.editorElement.getElementsByTagName('editor-plugin')) {
+                if ((el as Element).contains(s.anchorNode)) {
+                    el.parentNode.insertBefore(document.createTextNode(''), el);
+                    range.setStart(el.previousSibling, 0);
+                }
+                if ((el as Element).contains(s.focusNode)) {
+                    this.insertAfter(document.createTextNode(''), el);
+                    range.setEnd(el.previousSibling, 0);
+                }
             }
             return true;
         } else {

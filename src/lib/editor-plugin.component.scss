@@ -1,0 +1,34 @@
+.plugin-border {
+    display: grid;
+    padding: 3px;
+    border-radius: 3px;
+    border: thin solid gray;
+    background-color: lightgray;
+    font-weight: 500;
+}
+.plugin-editable-area {
+    background-color: white;
+    font-weight: normal;
+    border: thin solid black;
+    padding: 3px;
+}
+.plugin-menu-button {
+    width: auto;
+    height: auto;
+    line-height: 0;
+    margin-left: auto;
+}
+.plugin-title {
+    justify-self: center;
+}
+.plugin-controls {
+    position: absolute;
+    top: 40%;
+    left: 40%;
+    z-index: 10;
+    box-shadow: 0 5px 10px rgba(0,0,0,.2);
+}
+.plugin-controls-card {
+    padding: 3px;
+    display: block;
+}

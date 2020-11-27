@@ -1,9 +1,9 @@
 import {
-    AfterViewInit,
+    AfterViewInit, ApplicationRef,
     ChangeDetectorRef,
-    Component,
+    Component, ComponentFactoryResolver,
     ElementRef,
-    EventEmitter,
+    EventEmitter, Injector,
     Input,
     OnChanges,
     OnInit,
@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import {HelpingTools} from './helping-tools';
 import {MatDialog} from '@angular/material/dialog';
+import {EditorPluginComponent} from './editor-plugin.component';
 
 @Component({
     selector: 'lib-wysiwyg-editor',
@@ -44,19 +45,38 @@ export class EditorComponent implements AfterViewInit {
     imageWidthInput = '';
     clickedImage: HTMLImageElement;
 
+    pluginInstances: EditorPluginComponent[] = [];
+    @Input() pluginParameters: { selector: string, attributes: string[] }[];
+
     @ViewChild('helpDIV') helpDIV: ElementRef<HTMLDivElement>;
     helpPressed = false;
 
-    constructor() {}
+    constructor(private resolver: ComponentFactoryResolver,
+                private injector: Injector,
+                private app: ApplicationRef) {}
 
     ngAfterViewInit(): void {
         this.selection = document.getSelection();
-        console.log('received: ', this.startingHTMLvalue);
         if (this.startingHTMLvalue) {
-
             this.editorElement.nativeElement.innerHTML = this.startingHTMLvalue;
+            // @ts-ignore
+            for (const el of this.editorElement.nativeElement.getElementsByTagName('editor-plugin')) {
+                const factory = this.resolver.resolveComponentFactory(EditorPluginComponent);
+                let content;
+                if (el.hasChildNodes()) {
+                    content = el.childNodes[0];
+                }
+                const ref = factory.create(this.injector, null, el);
+                this.app.attachView(ref.hostView);
+                ref.instance.params = this.pluginParameters;
+                this.pluginInstances.push(ref.instance);
+                if (content) {
+                    ref.instance.setPlugin(content);
+                }
+            }
         }
         this.tools = new HelpingTools(this.editorElement.nativeElement);
+
         this.editorElement.nativeElement.addEventListener('selectionchange', () => {
             this.boldPressed = false;
             this.underlinePressed = false;
@@ -80,7 +100,8 @@ export class EditorComponent implements AfterViewInit {
             event.preventDefault();
             const s = document.getSelection();
             if (!this.tools.isInDiv(s)) {
-                // return null;
+                console.error('Error: Selected text does not belong to editor element');
+                return;
             }
             const r = new Range();
             const range = s.getRangeAt(0);
@@ -106,6 +127,7 @@ export class EditorComponent implements AfterViewInit {
 
             let trackNode = document.createTextNode('');
 
+            // TODO insert new text node before a?
             while (a.nodeType !== 3) {
                 if (a.childNodes) {
                     // select next node
@@ -152,12 +174,16 @@ export class EditorComponent implements AfterViewInit {
             }
 
             if (collapsed) {
-                // TODO a could be not a text node
+                // TODO a could be not a text node?
                 trackNode = (a as Text).splitText(anchorOffset);
                 this.tools.insertNewBlock(a);
             } else {
                 const t = (a as Text).splitText(anchorOffset);
-                trackNode = (f as Text).splitText(focusOffset);
+                if (a.isSameNode(f)) {
+                    trackNode = (f as Text).splitText(focusOffset - anchorOffset);
+                } else {
+                    trackNode = (f as Text).splitText(focusOffset);
+                }
                 let pa = a.parentNode;
                 // remove everything to the right
                 while (!pa.isSameNode(ca)) {
@@ -210,6 +236,8 @@ export class EditorComponent implements AfterViewInit {
             }
         }
         if (event.ctrlKey && (event.key === 'z')) {
+            console.log('ctrl+z');
+            console.log(event);
         }
         this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
@@ -234,12 +262,14 @@ export class EditorComponent implements AfterViewInit {
 
         while (!pa.isSameNode(pf)) {
             const temp = pa.nextSibling;
-            if (this.tools.isBlock(pa)) {
-                if (pa.nodeName.toLowerCase() !== tag) {
-                    this.tools.replaceNode(pa, tag);
+            if (pa.nodeName.toLowerCase() === 'editor-plugin') {
+                if (this.tools.isBlock(pa)) {
+                    if (pa.nodeName.toLowerCase() !== tag) {
+                        this.tools.replaceNode(pa, tag);
+                    }
+                } else {
+                    this.tools.putInBlock(pa, tag);
                 }
-            } else {
-                this.tools.putInBlock(pa, tag);
             }
             pa = temp;
         }
@@ -493,15 +523,17 @@ export class EditorComponent implements AfterViewInit {
                 const end = this.tools.getChild(f, ca);
                 while (!start.isSameNode(end)) {
                     if (start.nodeType === 1) {
-                        const collection = (start as Element).getElementsByTagName(tag);
-                        // tslint:disable-next-line:prefer-for-of
-                        for (let i = 0; i < collection.length; i++) {
-                            this.tools.removeNodeSavingChildren(collection[i]);
+                        if (start.nodeName.toLowerCase() !== 'editor-plugin') {
+                            const collection = (start as Element).getElementsByTagName(tag);
+                            // tslint:disable-next-line:prefer-for-of
+                            for (let i = 0; i < collection.length; i++) {
+                                this.tools.removeNodeSavingChildren(collection[i]);
+                            }
                         }
                     }
                     if (this.tools.isBlock(start)) {
                         const ne = this.tools.createElement(tag, attribute);
-                        // TODO start.firstChild could be block if lost of blockquotes
+                        // TODO start.firstChild could be block if nested blockquotes
                         while (start.firstChild) {
                             ne.appendChild(start.firstChild);
                         }
@@ -509,8 +541,10 @@ export class EditorComponent implements AfterViewInit {
                         start = start.nextSibling;
                     } else {
                         start = start.nextSibling;
-                        if (start.previousSibling.nodeName.toLowerCase() === tag &&
-                            this.tools.hasAttribute(start.previousSibling, attribute)) {
+                        if (start.previousSibling.nodeName.toLowerCase() !== tag &&
+                            start.previousSibling.nodeName.toLowerCase() !== 'editor-plugin'
+                            // && this.tools.hasAttribute(start.previousSibling, attribute)
+                        ) {
                             this.tools.coverNodeInNewElement(start.previousSibling, tag, attribute);
                         }
                     }
@@ -548,7 +582,14 @@ export class EditorComponent implements AfterViewInit {
     }
 
     getInnerHTML(): string {
-        return this.innerHTMLasString;
+        // for (const instance of this.pluginInstances) {
+        //     instance.transformToNormal();
+        // }
+        let str = this.editorElement.nativeElement.innerHTML;
+        for (const inst of this.pluginInstances) {
+            str = str.replace((inst.topDivElement.nativeElement.parentNode as Element).outerHTML, inst.getTransformedInner());
+        }
+        return str;
     }
 
     allowDrop(ev): void {
@@ -571,6 +612,7 @@ export class EditorComponent implements AfterViewInit {
         } else {
             const img = new Image();
             img.src = data;
+            img.style.maxWidth = '100%';
             if (ev.target.isSameNode(this.editorElement.nativeElement) &&
                 this.tools.isBlock(this.editorElement.nativeElement.lastChild)) {
                 ev.target.lastChild.appendChild(img);
@@ -579,9 +621,6 @@ export class EditorComponent implements AfterViewInit {
             }
         }
         this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
-    }
-    drag(ev): void {
-
     }
     dragStart(ev): void {
         if (ev.target.nodeName.toLowerCase() === 'img') {
@@ -638,5 +677,38 @@ export class EditorComponent implements AfterViewInit {
         this.clickedImage.style.margin = margin;
         this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
-}
 
+    insertPlugin(): void {
+        if (this.helpPressed) { return; }
+        // check selection to be inside div
+        const s = document.getSelection();
+
+        const factory = this.resolver.resolveComponentFactory(EditorPluginComponent);
+        const newNode = document.createElement('editor-plugin');
+
+        if (!this.tools.isInDiv(s)) {
+            this.editorElement.nativeElement.appendChild(newNode);
+            this.editorElement.nativeElement.appendChild(document.createElement('br'));
+        } else {
+            const r = s.getRangeAt(0);
+            let f = r.endContainer;
+            const offset = r.endOffset;
+            // problem: if no block, tag will be inserted, but it will be inside one when blocks will be created
+            this.tools.makeBlock();
+
+            while (this.tools.isBlock(f) || f.parentNode.isSameNode(this.editorElement.nativeElement)) {
+                f = f.parentNode;
+            }
+            if (offset === 0) {
+                f.parentNode.insertBefore(newNode, f);
+            } else {
+                this.tools.insertAfter(newNode, f);
+            }
+        }
+
+        const ref = factory.create(this.injector, null, newNode);
+        this.app.attachView(ref.hostView);
+        this.pluginInstances.push(ref.instance);
+        ref.instance.params = this.pluginParameters;
+    }
+}

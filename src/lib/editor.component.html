@@ -55,6 +55,8 @@
     <button mat-stroked-button class="editor-button-right" (click)="tag('sup')"><mat-icon aria-hidden="false">superscript</mat-icon></button>
 
     <button mat-stroked-button class="editor-single-button" (click)="helpToggle()"><mat-icon aria-hidden="false">help</mat-icon></button>
+
+    <button mat-stroked-button class="editor-single-button" *ngIf="pluginParameters" (click)="insertPlugin()"><mat-icon aria-hidden="false">add_box</mat-icon></button>
 </div>
 
 
@@ -122,9 +124,10 @@
     <br>
     <button mat-stroked-button>remove_float</button>
     <span> - remove image float</span>
+    <br>
+    <button mat-stroked-button *ngIf="pluginParameters"><mat-icon aria-hidden="false">add_box</mat-icon></button>
+    <span> - insert plugin</span>
 </div>
-
-<!--<pre>{{ innerHTMLasString.replace(regexParagraph, '$&\n').replace(regexBR, replaceBR) }}</pre>-->
 
 <div class="editor-image-controls" *ngIf="!imageControlsHidden" [style.top.px]="imageControlsTop" [style.left.px]="imageControlsLeft">
     <mat-card class="editor-image-controls-card">

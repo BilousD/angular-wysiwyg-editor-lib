@@ -6,12 +6,18 @@ import {MatIconModule} from '@angular/material/icon';
 import {CommonModule} from '@angular/common';
 import {MatCardModule} from '@angular/material/card';
 import {MatDialogModule} from '@angular/material/dialog';
+import {EditorPluginComponent} from './editor-plugin.component';
+import {DynamicHTMLModule} from './dynamic-html';
+import {ReactiveFormsModule} from '@angular/forms';
+import {MatOptionModule} from '@angular/material/core';
+import {MatSelectModule} from '@angular/material/select';
 
 
 
 @NgModule({
   declarations: [
-      EditorComponent
+      EditorComponent,
+      EditorPluginComponent
   ],
     imports: [
         MatButtonModule,
@@ -19,7 +25,15 @@ import {MatDialogModule} from '@angular/material/dialog';
         MatIconModule,
         CommonModule,
         MatCardModule,
-        MatDialogModule
+        MatDialogModule,
+        DynamicHTMLModule.forRoot({
+            components: [
+                {component: EditorPluginComponent, selector: 'editor-plugin'}
+            ]
+        }),
+        ReactiveFormsModule,
+        MatOptionModule,
+        MatSelectModule
     ],
   exports: [EditorComponent]
 })
