@@ -393,6 +393,7 @@ export class HelpingTools {
     }
 
     isCoveredInTag(node, tag, attribute, endPoint?): boolean {
+        if (node.nodeName.toLowerCase() === 'editor-plugin') { return true; }
         if (!node.outerHTML || node.outerHTML.indexOf('</' + tag + '>') < 0) { return false; }
         // replace with iteration of first child
         let c = node.firstChild;
