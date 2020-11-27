@@ -235,10 +235,10 @@ export class EditorComponent implements AfterViewInit {
                 s.addRange(range);
             }
         }
-        if (event.ctrlKey && (event.key === 'z')) {
-            console.log('ctrl+z');
-            console.log(event);
-        }
+        // if (event.ctrlKey && (event.key === 'z')) {
+        //     console.log('ctrl+z');
+        //     console.log(event);
+        // }
         this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
     block(tag: string): void {
@@ -473,10 +473,11 @@ export class EditorComponent implements AfterViewInit {
                 if (ca.contains(end)) {
                     let gp = this.tools.getParent(a, tag, attribute);
                     start = this.tools.removeNodeSavingChildren(gp);
-                    while (!start.isSameNode(ca)) {
+                    while (!start.parentNode.isSameNode(ca)) {
                         // check for block?  && !this.tools.isBlock(start)
                         while (start.nextSibling) {
                             this.tools.removeTagNodeOrTagFromChildren(start.nextSibling, tag, attribute);
+                            start = start.nextSibling;
                         }
                         start = start.parentNode;
                     }
@@ -486,10 +487,12 @@ export class EditorComponent implements AfterViewInit {
                     } else {
                         end = end.parentNode;
                     }
+                    // was gp instead of end, could be an error
                     this.tools.removeNodeSavingChildren(gp);
-                    while (!end.isSameNode(ca)) {
+                    while (!end.parentNode.isSameNode(ca)) {
                         while (end.previousSibling) {
                             this.tools.removeTagNodeOrTagFromChildren(end.previousSibling, tag, attribute);
+                            end = end.previousSibling;
                         }
                         end = end.parentNode;
                     }

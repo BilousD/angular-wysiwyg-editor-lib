@@ -13,5 +13,11 @@
     "repository": {
         "type" : "git",
         "url" : "https://github.com/BilousD/angular-wysiwyg-editor-lib.git"
-    }
+    },
+    "keywords": [
+        "angular",
+        "material",
+        "wysiwyg",
+        "editor"
+    ]
 }

@@ -107,7 +107,7 @@ export class HelpingTools {
             }
             node.parentNode.removeChild(node);
         } else {
-            if (node.type === 1) {
+            if (node.nodeType === 1) {
                 const collection = node.getElementsByTagName(tag);
                 // tslint:disable-next-line:prefer-for-of
                 for (let i = 0; i < collection.length; i++) {
@@ -368,8 +368,8 @@ export class HelpingTools {
             console.error('out of bounds');
             return false;
         }
-        if (!this.checkSiblings(c, tag, pe)) { return false; }
-        return this.isCoveredInTag(pe, tag, end);
+        if (!this.checkSiblings(c, tag, attribute, pe)) { return false; }
+        return this.isCoveredInTag(pe, tag, attribute, end);
     }
 
     /**
@@ -393,7 +393,10 @@ export class HelpingTools {
     }
 
     isCoveredInTag(node, tag, attribute, endPoint?): boolean {
-        if (node.nodeName.toLowerCase() === 'editor-plugin') { return true; }
+        if (node.nodeName.toLowerCase() === 'editor-plugin' ||
+            (this.isBlock(node) && !node.innerHTML)) {
+            return true;
+        }
         if (!node.outerHTML || node.outerHTML.indexOf('</' + tag + '>') < 0) { return false; }
         // replace with iteration of first child
         let c = node.firstChild;
@@ -504,7 +507,7 @@ export class HelpingTools {
                 // [][] = ''                --- empty - only delete
                 // [][asd] = [asd]          --- empty - only delete
                 // [asd][][asd] = [asdasd]  --- has - check previous, skip ones marked for deletion
-                if (!c.hasChildNodes() || !this.hasChildren(c)) {
+                if (!this.isEmptyLine(c) && (!c.hasChildNodes() || !this.hasChildren(c))) {
                     markDeleting.push(c);
                 } else {
                     let ps = c.previousSibling;
@@ -531,6 +534,44 @@ export class HelpingTools {
                 parent.removeChild(m);
             }
         }
+        const blocks = ['p', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+        for (const bl of blocks) {
+            const collection = this.editorElement.getElementsByTagName(bl);
+            Array.from(collection).forEach(c => {
+                if (!c.hasChildNodes()) {
+                    c.appendChild(document.createElement('br'));
+                }
+            });
+        }
+    }
+
+    /**
+     * returns true if node has nonempty text child, or is an empty new line
+     * @param c
+     */
+    isEmptyLine(c: Node): boolean {
+        // c has parent p, c has empty child without siblings
+        if (c.nextSibling || c.previousSibling) {
+            return false;
+        }
+        let checkChildren = c;
+        while (checkChildren.firstChild) {
+            if (checkChildren.nextSibling || checkChildren.previousSibling) {
+                return false;
+            }
+            checkChildren = checkChildren.firstChild;
+        }
+        // checkChildren now is lowest child in current branch
+        // if it is not empty (has some text), this branch should not be marked for deletion
+        if (checkChildren.nodeType === 3 && (checkChildren as Text).length > 0) {
+            return true;
+        }
+        while (this.isBlock(c) || c.isSameNode(this.editorElement)) {
+            if (c.nextSibling || c.previousSibling) {
+                return false;
+            }
+        }
+        return true;
     }
 
     compareAttributes(a, b): boolean {
