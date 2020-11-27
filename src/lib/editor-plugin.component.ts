@@ -37,7 +37,10 @@ export class EditorPluginComponent {
         plugin.parentNode.removeChild(plugin);
     }
 
-    save(form: NgForm): void {
+    save(form: NgForm): boolean {
+        if (!this.selected) {
+            return false;
+        }
         // TODO remove attributes of other plugins
         const attributes = form.form.value;
         const newPlugin = document.createElement(this.selected.selector);
@@ -57,6 +60,7 @@ export class EditorPluginComponent {
             newPlugin.innerHTML = '';
         }
         this.plugin = newPlugin;
+        return true;
     }
 
     getAttribute(attrib: string): string {
@@ -82,8 +86,12 @@ export class EditorPluginComponent {
     }
 
     getTransformedInner(): string {
-        this.save(this.form);
-        return '<editor-plugin>' + this.plugin.outerHTML + '</editor-plugin>';
+        const isSaved = this.save(this.form);
+        if (isSaved) {
+            return '<editor-plugin>' + this.plugin.outerHTML + '</editor-plugin>';
+        } else {
+            return '';
+        }
     }
 
 }
