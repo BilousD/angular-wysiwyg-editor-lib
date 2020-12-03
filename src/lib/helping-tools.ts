@@ -42,11 +42,16 @@ export class HelpingTools {
         }
     }
 
-    insertNewBlock(node): void {
+    /**
+     * inserts new block cloning everything up to block node
+     * @param node
+     */
+    insertNewBlock(node: Node): void {
         // this.split(node, this.editorElement);
         let gen = node;
         let pa = gen.parentNode;
-        while (!pa.isSameNode(this.editorElement)) {
+        // TODO could become a problem if pa could have block node as a sibling to a non block node
+        while (!(pa.isSameNode(this.editorElement) || this.isBlock(pa.firstChild) || pa.nodeName.toLowerCase() === 'td')) {
             const pc = pa.cloneNode(false);
             while (gen.nextSibling) {
                 const sib = gen.nextSibling;
@@ -133,8 +138,8 @@ export class HelpingTools {
      * returns true if node is block node (p, ...)
      */
     isBlock(node): boolean {
-        const block = ['p', 'blockquote', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
-        return block.indexOf(node.localName) > -1;
+        const block = ['p', 'blockquote', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'th', 'tr'];
+        return block.indexOf(node.nodeName.toLowerCase()) > -1;
     }
 
     joinLeft(node, parent, tag, attribute): Node {
@@ -688,5 +693,19 @@ export class HelpingTools {
         }
         parent.insertBefore(newElement, node);
         newElement.insertBefore(node, newElement.firstChild);
+    }
+
+    insertCell(row: HTMLTableRowElement, index?: number): void {
+        const cell = row.insertCell(index);
+        cell.style.border = '1px solid #ddd';
+        cell.appendChild(document.createElement('br'));
+    }
+
+    getBlock(node): Node {
+        let n = node;
+        while (!(n.isSameNode(this.editorElement) || this.isBlock(n))) {
+            n = n.parentNode;
+        }
+        return n;
     }
 }
