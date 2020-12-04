@@ -1,6 +1,6 @@
 {
   "name": "@bilousd/angular-wysiwyg-editor-lib",
-  "version": "0.0.14",
+  "version": "0.0.15",
     "license": "MIT",
   "peerDependencies": {
     "@angular/common": "^10.1.6",
