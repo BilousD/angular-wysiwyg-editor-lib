@@ -1,4 +1,4 @@
-import { HelpingTools } from './helping-tools';
+import {HelpingTools} from './helping-tools';
 
 export class ButtonTools {
     editorElement: Element;
@@ -76,50 +76,62 @@ export class ButtonTools {
             return;
         }
 
-        while (a.nodeType !== 3) {
-            if (a.childNodes) {
-                // select next node
-                if (startOffset >= a.childNodes.length) {
-                    const ne = new Text('');
-                    a.appendChild(ne);
-                    a = ne;
-                } else {
-                    a = a.childNodes[startOffset];
-                }
-                startOffset = 0;
-            } else {
-                const ne = new Text('');
-                if (a.nodeName === 'br' || a.nodeName === 'img') {
-                    a.parentNode.insertBefore(ne, a);
-                } else {
-                    a.appendChild(ne);
-                }
-                rangeStart = a = ne;
-                startOffset = 0;
-            }
+        let vals = this.tools.getTextNode(a, startOffset);
+        a = vals.node;
+        startOffset = vals.offset;
+        if (vals.range) {
+            rangeStart = vals.range;
         }
-        while (f.nodeType !== 3) {
-            if (f.childNodes) {
-                // select next node
-                if (endOffset >= f.childNodes.length) {
-                    const ne = new Text('');
-                    f.appendChild(ne);
-                    f = ne;
-                } else {
-                    f = f.childNodes[endOffset];
-                }
-                endOffset = 0;
-            } else {
-                const ne = new Text('');
-                if (f.nodeName === 'br' || f.nodeName === 'img') {
-                    f.parentNode.insertBefore(ne, f);
-                } else {
-                    f.appendChild(ne);
-                }
-                rangeEnd = f = ne;
-                endOffset = 0;
-            }
+        // while (a.nodeType !== 3) {
+        //     if (a.childNodes) {
+        //         // select next node
+        //         if (startOffset >= a.childNodes.length) {
+        //             const ne = new Text('');
+        //             a.appendChild(ne);
+        //             a = ne;
+        //         } else {
+        //             a = a.childNodes[startOffset];
+        //         }
+        //         startOffset = 0;
+        //     } else {
+        //         const ne = new Text('');
+        //         if (a.nodeName === 'br' || a.nodeName === 'img') {
+        //             a.parentNode.insertBefore(ne, a);
+        //         } else {
+        //             a.appendChild(ne);
+        //         }
+        //         rangeStart = a = ne;
+        //         startOffset = 0;
+        //     }
+        // }
+        vals = this.tools.getTextNode(f, endOffset);
+        f = vals.node;
+        endOffset = vals.offset;
+        if (vals.range) {
+            rangeEnd = vals.range;
         }
+        // while (f.nodeType !== 3) {
+        //     if (f.childNodes) {
+        //         // select next node
+        //         if (endOffset >= f.childNodes.length) {
+        //             const ne = new Text('');
+        //             f.appendChild(ne);
+        //             f = ne;
+        //         } else {
+        //             f = f.childNodes[endOffset];
+        //         }
+        //         endOffset = 0;
+        //     } else {
+        //         const ne = new Text('');
+        //         if (f.nodeName === 'br' || f.nodeName === 'img') {
+        //             f.parentNode.insertBefore(ne, f);
+        //         } else {
+        //             f.appendChild(ne);
+        //         }
+        //         rangeEnd = f = ne;
+        //         endOffset = 0;
+        //     }
+        // }
 
         if (r.collapsed) {
 // START = END -------------------------------------------------------------------------------------
@@ -407,5 +419,165 @@ export class ButtonTools {
         range.setEnd(rangeEnd, endOffset);
         document.getSelection().removeAllRanges();
         document.getSelection().addRange(range);
+    }
+
+    clearFormatting(): void {
+        const s = document.getSelection();
+
+        if (!this.tools.isInDiv(s)) {
+            return;
+        }
+        const r = s.getRangeAt(0);
+        let start = r.startContainer;
+        let end = r.endContainer;
+        const rangeStart = r.startContainer;
+        let startOffset = r.startOffset;
+        const rangeEnd = r.endContainer;
+        let endOffset = r.endOffset;
+        const ca = r.commonAncestorContainer;
+        const collapsed = r.collapsed;
+
+        // get selection text? s.toString() - getBlock() - block.child = string?
+        //                                                 block.child = block.wholeText?
+        // remove parents until div editor, put p parent
+        this.tools.makeBlock();
+
+        // start = this.tools.getBlock(start);
+        // end = this.tools.getBlock(end);
+
+        if (collapsed) {
+            while (!this.tools.isBlock(start) || start.isSameNode(this.editorElement)) {
+                start = start.parentNode;
+            }
+            const txt = document.createTextNode(start.textContent);
+            start.appendChild(txt);
+            while (txt.previousSibling) {
+                start.removeChild(txt.previousSibling);
+            }
+        } else {
+            // 1. start and end in same block
+            // 2. start and end in different blocks
+            // 1. start and end in same node
+            // 2. start and end in different nodes
+            // 3. start or end is not a text
+            //
+            // get text node of START and next text nodes up until CA or BLOCK
+            // if not child of BLOCK - move everything to the right of end to copy of current node -
+            // - insert start-end text node between original and copy
+            let vals = this.tools.getTextNode(start, startOffset);
+            start = vals.node;
+            startOffset = vals.offset;
+            vals = this.tools.getTextNode(end, endOffset);
+            end = vals.node;
+            endOffset = vals.offset;
+
+            const finishProductStart = document.createTextNode('');
+            const finishProductEnd = document.createTextNode('');
+
+            if (!start.isSameNode(end)) {
+                finishProductStart.appendData((start as Text).substringData(startOffset, (start as Text).length));
+                (start as Text).replaceData(startOffset, (start as Text).length, '');
+                while ( !(start.isSameNode(ca) || this.tools.isBlock(start)) ) {
+                    while (start.nextSibling) {
+                        const ns = start.nextSibling;
+                        finishProductStart.appendData(ns.textContent);
+                        ns.remove();
+                    }
+                    start = start.parentNode;
+                }
+                finishProductEnd.appendData((end as Text).substringData(0, endOffset));
+                (end as Text).replaceData(0, endOffset, '');
+                while ( !(end.isSameNode(ca) || this.tools.isBlock(end)) ) {
+                    while (end.previousSibling) {
+                        const ps = end.previousSibling;
+                        finishProductEnd.insertData(0, ps.textContent);
+                        ps.remove();
+                    }
+                    end = end.parentNode;
+                }
+                // start and end on same plane OR right under blocks
+                //
+                // start.parent is same node as end only if they both under ca
+                // if they both under ca - between them should not be any blocks?
+                //
+                // if start and end doesnt have same parent - they are not in same plane - they are under <block> - save text,
+                //              and continue changing siblings to text, until child of ca, then 1 more time with check for end being sibling
+                if (!start.parentNode.isSameNode(end)) {
+                    // save text for start and end
+                    // check for sibling
+                    while (start.nextSibling) {
+                        const ns = start.nextSibling;
+                        finishProductStart.appendData(ns.textContent);
+                        ns.remove();
+                    }
+                    start = start.parentNode;
+                    start.appendChild(finishProductStart);
+
+                    while (end.previousSibling) {
+                        const ps = end.previousSibling;
+                        finishProductEnd.insertData(0, ps.textContent);
+                        ps.remove();
+                    }
+                    end.parentNode.insertBefore(finishProductEnd, end);
+                    end = end.parentNode;
+
+                    while (!start.parentNode.isSameNode(ca)) {
+                        let ns = start.nextSibling;
+                        while (ns) {
+                            this.tools.removeStyling(ns);
+                            ns = ns.nextSibling;
+                        }
+                        start = start.parentNode;
+                    }
+                    while (!end.parentNode.isSameNode(ca)) {
+                        let ps = end.previousSibling;
+                        while (ps) {
+                            this.tools.removeStyling(ps);
+                            ps = ps.previousSibling;
+                        }
+                        end = end.parentNode;
+                    }
+                    // end and start under ca
+                    start = start.nextSibling;
+                    while (!start.isSameNode(end)) {
+                        this.tools.removeStyling(start);
+                        start = start.nextSibling;
+                    }
+                } else {
+                    while (!(start.nextSibling.isSameNode(end))) {
+                        const ns = start.nextSibling;
+                        finishProductStart.appendData(ns.textContent);
+                        ns.remove();
+                    }
+                    // need to insert text after start, but at level under block
+                    while (!this.tools.isBlock(start.parentNode)) {
+                        const p = start.parentNode;
+                        const clone = p.cloneNode(false);
+                        while (start.nextSibling) {
+                            clone.appendChild(start.nextSibling);
+                        }
+                        this.tools.insertAfter(clone, p);
+                        start = p;
+                    }
+                    finishProductStart.appendData(finishProductEnd.data);
+                    this.tools.insertAfter(finishProductStart, start);
+                }
+            } else {
+                // 123 <start> 456 </end> 789
+                const finishProduct = (start as Text).splitText(startOffset);
+                (start as Text).splitText(endOffset - startOffset);
+                start.parentNode.removeChild(finishProduct);
+                while (!this.tools.isBlock(start.parentNode)) {
+                    const p = start.parentNode;
+                    const clone = p.cloneNode(false);
+                    while (start.nextSibling) {
+                        clone.appendChild(start.nextSibling);
+                    }
+                    this.tools.insertAfter(clone, p);
+                    start = p;
+                }
+                this.tools.insertAfter(finishProduct, start);
+            }
+        }
     }
 }

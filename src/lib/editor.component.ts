@@ -431,23 +431,7 @@ export class EditorComponent implements AfterViewInit {
     }
 
     clearFormatting(): void {
-        // if (this.helpPressed) { return; }
-        // const s = document.getSelection();
-        //
-        // if (!this.tools.isInDiv(s)) {
-        //     return;
-        // }
-        // const r = s.getRangeAt(0);
-        // let start = r.startContainer;
-        // let end = r.endContainer;
-        // const rangeStart = r.startContainer;
-        // const startOffset = r.startOffset;
-        // const rangeEnd = r.endContainer;
-        // const endOffset = r.endOffset;
-        // const ca = r.commonAncestorContainer;
-        //
-        // // get selection text? s.toString() - getBlock() - block.child = string?
-        // //                                                 block.child = block.wholeText?
-        // // remove parents until div editor, put p parent
+        if (this.helpPressed) { return; }
+        this.buttonTools.clearFormatting();
     }
 }

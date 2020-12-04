@@ -28,8 +28,6 @@
         </button>
         <button mat-stroked-button class="editor-button-right" (click)="c2.click()"><mat-icon aria-hidden="false">arrow_drop_down</mat-icon></button>
         <input #c2 type="color" style="height: 0; width: 0; visibility: hidden">
-
-        <button mat-stroked-button class="editor-single-button" (click)="helpToggle()"><mat-icon aria-hidden="false">help</mat-icon></button>
     </div>
     <div class="editor-div">
         <button mat-stroked-button class="editor-single-button" [matMenuTriggerFor]="fonts">
@@ -58,11 +56,14 @@
         <button mat-stroked-button class="editor-button-left" (click)="tag('sub')"><mat-icon aria-hidden="false">subscript</mat-icon></button>
         <button mat-stroked-button class="editor-button-right" (click)="tag('sup')"><mat-icon aria-hidden="false">superscript</mat-icon></button>
 
+        <button mat-stroked-button class="editor-single-button" (click)="helpToggle()"><mat-icon aria-hidden="false">help</mat-icon></button>
+
         <button mat-stroked-button class="editor-button-left" (click)="transformToList()"><mat-icon aria-hidden="false">format_list_bulleted</mat-icon></button>
         <button mat-stroked-button class="editor-button-right" (click)="transformToList(true)"><mat-icon aria-hidden="false">format_list_numbered</mat-icon></button>
+
+        <button mat-stroked-button class="editor-single-button" (click)="clearFormatting()"><mat-icon aria-hidden="false">format_clear</mat-icon></button>
     </div>
     <div class="editor-div">
-        <button mat-stroked-button *ngIf="false" class="editor-single-button" (click)="clearFormatting()"><mat-icon aria-hidden="false">format_clear</mat-icon></button>
         <input type="number" class="editor-table-input" placeholder="Cells" #cells>
         <input type="number" class="editor-table-input" placeholder="Rows" #rows>
         <button mat-stroked-button class="editor-single-button" (click)="insertTable(cells.value, rows.value)"><mat-icon aria-hidden="false">border_all</mat-icon></button>
@@ -126,6 +127,9 @@
     <span> - insert table</span>    <br>
     <button mat-stroked-button class="editor-single-button"><mat-icon aria-hidden="false">power</mat-icon></button>
     <span> - insert plugin</span>    <br>
+    <button mat-stroked-button class="editor-single-button"><mat-icon aria-hidden="false">format_clear</mat-icon></button>
+    <span> - remove font style</span>    <br>
+
     <h3>Image controls</h3>
     <input class="editor-image-controls-input" placeholder="↕">
     <span> - image height</span>
@@ -146,6 +150,8 @@
     <span> - remove image float</span>
 </div>
 
+<pre>{{ innerHTMLasString.replace(regexParagraph, '$&\n').replace(regexBR, replaceBR) }}</pre>
+
 <div class="editor-image-controls" *ngIf="!imageControlsHidden" [style.top.px]="imageControlsTop" [style.left.px]="imageControlsLeft">
     <mat-card class="editor-image-controls-card">
         <input class="editor-image-controls-input" placeholder="↕" #ich [value]="imageHeightInput">
@@ -159,9 +165,17 @@
 
 <div class="editor-image-controls" *ngIf="!tableControlsHidden" [style.top.px]="tableControlsTop" [style.left.px]="tableControlsLeft">
     <mat-card class="editor-image-controls-card">
-        <button mat-stroked-button (click)="insertRow()">Insert_top</button>
-        <button mat-stroked-button (click)="insertRow(true)">Insert_bottom</button>
-        <button mat-stroked-button (click)="insertColumn()">Insert_left</button>
-        <button mat-stroked-button (click)="insertColumn(true)">Insert_right</button>
+        <button mat-stroked-button class="editor-table-button" (click)="insertRow()">
+            <mat-icon class="editor-table-icon-upper">arrow_upward</mat-icon><br><mat-icon class="editor-table-icon-lower">view_stream</mat-icon>
+        </button>
+        <button mat-stroked-button class="editor-table-button" (click)="insertRow(true)">
+            <mat-icon class="editor-table-icon-upper">view_stream</mat-icon><br><mat-icon class="editor-table-icon-lower">arrow_downward</mat-icon>
+        </button>
+        <button mat-stroked-button class="editor-table-button" (click)="insertColumn()">
+            <mat-icon class="editor-table-icon">arrow_back</mat-icon><mat-icon class="editor-table-icon">view_column</mat-icon>
+        </button>
+        <button mat-stroked-button class="editor-table-button" (click)="insertColumn(true)">
+            <mat-icon class="editor-table-icon">view_column</mat-icon><mat-icon class="editor-table-icon">arrow_forward</mat-icon>
+        </button>
     </mat-card>
 </div>

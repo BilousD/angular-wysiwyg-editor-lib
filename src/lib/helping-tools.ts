@@ -708,4 +708,48 @@ export class HelpingTools {
         }
         return n;
     }
+
+    getTextNode(node, offset): { node: Node, range, offset } {
+        let range;
+        while (node.nodeType !== 3) {
+            if (node.childNodes) {
+                // select next node
+                if (offset >= node.childNodes.length) {
+                    const ne = new Text('');
+                    node.appendChild(ne);
+                    node = ne;
+                } else {
+                    node = node.childNodes[offset];
+                }
+                offset = 0;
+            } else {
+                const ne = new Text('');
+                if (node.nodeName === 'br' || node.nodeName === 'img') {
+                    node.parentNode.insertBefore(ne, node);
+                } else {
+                    node.appendChild(ne);
+                }
+                range = node = ne;
+                offset = 0;
+            }
+        }
+        return { node, range, offset };
+    }
+
+    /**
+     * transforms children of blocks into a text node
+     * @param ns
+     */
+    removeStyling(ns: Node): void {
+        // @ts-ignore
+        for (const child of ns.childNodes) {
+            if (!this.isBlock(child)) {
+                const nt = document.createTextNode(child.textContent);
+                ns.insertBefore(nt, child);
+                child.remove();
+            } else {
+                this.removeStyling(child);
+            }
+        }
+    }
 }
