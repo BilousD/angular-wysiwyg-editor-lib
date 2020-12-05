@@ -69,10 +69,13 @@ export class InsertTools {
             const collapsed = r.collapsed;
             this.tools.makeBlock();
 
-            while (this.tools.isBlock(f) || f.parentNode.isSameNode(this.editorElement)) {
+            while (!(this.tools.isBlock(f) || f.parentNode.isSameNode(this.editorElement) || f.isSameNode(this.editorElement))) {
                 f = f.parentNode;
             }
-            if (offset === 0 && collapsed) {
+            if (f.isSameNode(this.editorElement)) {
+                // div, so offsets counts differently
+                this.tools.insertAfter(newNode, f.childNodes[offset]);
+            } else if (offset === 0) {
                 f.parentNode.insertBefore(newNode, f);
             } else {
                 this.tools.insertAfter(newNode, f);

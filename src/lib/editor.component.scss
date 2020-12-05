@@ -40,7 +40,7 @@
     box-shadow: 0 5px 10px rgba(0,0,0,.2)
 }
 .editor-image-controls-card {
-    padding: 6px;
+    padding: 3px;
 }
 .editor-image-controls-input {
     width: 20px;
@@ -49,6 +49,21 @@
 .editor-table-input {
     width: 50px;
     margin: 7px 0 7px 7px;
+}
+.editor-table-button {
+    height: 36px;
+    padding: 0;
+}
+.editor-table-icon, .editor-table-icon-upper, .editor-table-icon-lower {
+    font-size: 20px;
+}
+.editor-table-icon-upper {
+    position: relative;
+    top: -5px;
+}
+.editor-table-icon-lower {
+    position: relative;
+    top: -25px;
 }
 .editor-help {
     display: flex;

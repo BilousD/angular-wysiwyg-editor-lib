@@ -82,56 +82,12 @@ export class ButtonTools {
         if (vals.range) {
             rangeStart = vals.range;
         }
-        // while (a.nodeType !== 3) {
-        //     if (a.childNodes) {
-        //         // select next node
-        //         if (startOffset >= a.childNodes.length) {
-        //             const ne = new Text('');
-        //             a.appendChild(ne);
-        //             a = ne;
-        //         } else {
-        //             a = a.childNodes[startOffset];
-        //         }
-        //         startOffset = 0;
-        //     } else {
-        //         const ne = new Text('');
-        //         if (a.nodeName === 'br' || a.nodeName === 'img') {
-        //             a.parentNode.insertBefore(ne, a);
-        //         } else {
-        //             a.appendChild(ne);
-        //         }
-        //         rangeStart = a = ne;
-        //         startOffset = 0;
-        //     }
-        // }
         vals = this.tools.getTextNode(f, endOffset);
         f = vals.node;
         endOffset = vals.offset;
         if (vals.range) {
             rangeEnd = vals.range;
         }
-        // while (f.nodeType !== 3) {
-        //     if (f.childNodes) {
-        //         // select next node
-        //         if (endOffset >= f.childNodes.length) {
-        //             const ne = new Text('');
-        //             f.appendChild(ne);
-        //             f = ne;
-        //         } else {
-        //             f = f.childNodes[endOffset];
-        //         }
-        //         endOffset = 0;
-        //     } else {
-        //         const ne = new Text('');
-        //         if (f.nodeName === 'br' || f.nodeName === 'img') {
-        //             f.parentNode.insertBefore(ne, f);
-        //         } else {
-        //             f.appendChild(ne);
-        //         }
-        //         rangeEnd = f = ne;
-        //         endOffset = 0;
-        //     }
-        // }
 
         if (r.collapsed) {
 // START = END -------------------------------------------------------------------------------------
@@ -368,9 +324,9 @@ export class ButtonTools {
         let start = r.startContainer;
         let end = r.endContainer;
         const rangeStart = r.startContainer;
-        const startOffset = r.startOffset;
+        let startOffset = r.startOffset;
         const rangeEnd = r.endContainer;
-        const endOffset = r.endOffset;
+        let endOffset = r.endOffset;
         const ca = r.commonAncestorContainer;
 
         this.tools.makeBlock();
@@ -405,13 +361,36 @@ export class ButtonTools {
             }
         } else {
             // ca is not block, so start and end should be the same node ( root - [ blocks? ] - [ tags? ] - text )
-            start.parentNode.insertBefore(list, start);
-            const li = document.createElement('li');
-            list.appendChild(li);
-            while (start.firstChild) {
-                li.appendChild(start.firstChild);
+            if (start.isSameNode(this.editorElement)) {
+                // get element depending on offset, insert after this element
+                start = this.editorElement.childNodes[startOffset];
+                startOffset = 0;
+                end = this.editorElement.childNodes[endOffset];
+                endOffset = 0;
             }
-            start.parentNode.removeChild(start);
+            if (start.parentNode.nodeName.toLowerCase() === 'ol' || start.parentNode.nodeName.toLowerCase() === 'ul') {
+                const old = start.parentNode;
+                old.parentNode.insertBefore(list, old);
+                while (old.firstChild) {
+                    list.appendChild(old.firstChild);
+                }
+                old.parentNode.removeChild(old);
+                // TODO buggy, maybe in the future
+                // start.insertBefore(list, start.firstChild);
+                // const li = document.createElement('li');
+                // list.appendChild(li);
+                // while (list.nextSibling) {
+                //     li.appendChild(list.nextSibling);
+                // }
+            } else {
+                start.parentNode.insertBefore(list, start);
+                const li = document.createElement('li');
+                list.appendChild(li);
+                while (start.firstChild) {
+                    li.appendChild(start.firstChild);
+                }
+                start.parentNode.removeChild(start);
+            }
         }
 
         const range = new Range();

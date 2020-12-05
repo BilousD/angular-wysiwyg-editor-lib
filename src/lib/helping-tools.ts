@@ -138,7 +138,7 @@ export class HelpingTools {
      * returns true if node is block node (p, ...)
      */
     isBlock(node): boolean {
-        const block = ['p', 'blockquote', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'th', 'tr'];
+        const block = ['p', 'blockquote', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'th', 'tr', 'li', 'ol', 'ul'];
         return block.indexOf(node.nodeName.toLowerCase()) > -1;
     }
 
