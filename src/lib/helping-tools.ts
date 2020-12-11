@@ -452,11 +452,11 @@ export class HelpingTools {
     }
 
 // DEPRECATED
-    hasParent(node, tag): boolean {
+    hasParent(node, tag): Node {
         if (!node) { return null; }
-        if (node.localName === tag) { return true; }
-        if (node.localName !== 'div') { return this.hasParent(node.parentNode, tag); }
-        return false;
+        if (node.nodeName.toLowerCase() === tag) { return node; }
+        if (node.nodeName.toLowerCase() !== 'div') { return this.hasParent(node.parentNode, tag); }
+        return null;
     }
 
     /**
@@ -478,7 +478,7 @@ export class HelpingTools {
         node.childNodes.forEach(child => {
             if ((child.nodeType !== 3 && this.hasChildren(child))
                 || (child.nodeType === 3 && (child as Text).length !== 0)
-                // || (child.nodeType === 3 && (child as Text).length === 1 && child.wholeText !== '\u200B')
+                || (child.nodeName.toLowerCase() === 'br')
             ) {
                 has = true;
             }
@@ -512,7 +512,7 @@ export class HelpingTools {
                 // [][] = ''                --- empty - only delete
                 // [][asd] = [asd]          --- empty - only delete
                 // [asd][][asd] = [asdasd]  --- has - check previous, skip ones marked for deletion
-                if (!this.isEmptyLine(c) && (!c.hasChildNodes() || !this.hasChildren(c))) {
+                if (!this.isEmptyLine(c) && !(c.hasChildNodes() || this.hasChildren(c))) {
                     markDeleting.push(c);
                 } else {
                     let ps = c.previousSibling;
@@ -599,7 +599,6 @@ export class HelpingTools {
     createElement(tag, attribute): Element {
         if (attribute) {
             const ne = document.createElement(tag);
-            console.log(attribute[1]);
             ne.setAttribute(attribute[0], attribute[1]);
             return ne;
         } else {
@@ -709,9 +708,38 @@ export class HelpingTools {
         return n;
     }
 
-    getTextNode(node, offset): { node: Node, range, offset } {
+    /**
+     *
+     * @param node
+     * @param offset
+     * @param ca - common ancestor for end text node searching
+     */
+    getTextNode(node, offset, ca?: Node): { node: Node, range, offset } {
         let range;
+        if (ca && node.nodeType !== 3 && offset === 0) {
+            let tempFix = node;
+            let tempFixOffset = offset;
+            while (!tempFix.isSameNode(ca)) {
+                if (tempFix.previousSibling) {
+                    tempFix = tempFix.previousSibling;
+                    if (tempFix.nodeType === 3) {
+                        tempFixOffset = tempFix.length;
+                    } else {
+                        tempFixOffset = tempFix.childNodes.length - 1;
+                    }
+                    break;
+                } else {
+                    tempFix = tempFix.parentNode;
+                }
+            }
+            if (!tempFix.isSameNode(ca)) {
+                node = tempFix;
+                offset = tempFixOffset;
+            }
+        }
         while (node.nodeType !== 3) {
+            // if looking for end and offset 0 - go for previous node with max offset
+
             if (node.childNodes) {
                 // select next node
                 if (offset >= node.childNodes.length) {
@@ -721,7 +749,15 @@ export class HelpingTools {
                 } else {
                     node = node.childNodes[offset];
                 }
-                offset = 0;
+                if (ca) {
+                    if (node.nodeType === 3) {
+                        offset = node.length;
+                    } else {
+                        offset = node.childNodes.length - 1;
+                    }
+                } else {
+                    offset = 0;
+                }
             } else {
                 const ne = new Text('');
                 if (node.nodeName === 'br' || node.nodeName === 'img') {

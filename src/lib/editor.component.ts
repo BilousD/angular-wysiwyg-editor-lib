@@ -100,6 +100,18 @@ export class EditorComponent implements AfterViewInit {
                 this.underlinePressed = true;
             }
         });
+        window.onclick = (event) => {
+            if (!(event.target.matches('.dropbtn') || event.target.parentNode.matches('.dropbtn'))) {
+                const dropdowns = document.getElementsByClassName('dropdown-content');
+                let i;
+                for (i = 0; i < dropdowns.length; i++) {
+                    const openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
+                }
+            }
+        };
     }
 
     helpToggle(): void {
@@ -119,106 +131,179 @@ export class EditorComponent implements AfterViewInit {
             const r = new Range();
             const range = s.getRangeAt(0);
             let a = range.startContainer;
-            let anchorOffset = range.startOffset;
+            let startOffset = range.startOffset;
             let f = range.endContainer;
-            let focusOffset = range.endOffset;
+            let endOffset = range.endOffset;
             let ca = range.commonAncestorContainer;
             const collapsed = range.collapsed;
 
-            const newParagraph = this.tools.makeBlock();
-            if (newParagraph) {
-                ca = newParagraph;
-                if (a.isSameNode(this.editorElement.nativeElement)) {
-                    a = a.firstChild;
-                }
-                if (f.isSameNode(this.editorElement.nativeElement)) {
-                    f = f.firstChild;
-                }
-            }
-            // TODO br
-            // TODO if blockquote - ????????
-
             let trackNode = document.createTextNode('');
 
-            // TODO insert new text node before a?
-            while (a.nodeType !== 3) {
-                if (a.childNodes) {
-                    // select next node
-                    if (anchorOffset >= a.childNodes.length) {
-                        const ne = new Text('');
-                        a.appendChild(ne);
-                        a = ne;
-                    } else {
-                        a = a.childNodes[anchorOffset];
-                    }
-                    anchorOffset = 0;
-                } else {
-                    if (a.nodeName === 'br' || a.nodeName === 'img') {
-                        const ne = new Text('');
-                        a.parentNode.insertBefore(ne, a);
-                        a = ne;
-                    } else {
-                        const ne = new Text('');
-                        a.appendChild(ne);
-                    }
-                }
-            }
-            while (f.nodeType !== 3) {
-                if (f.childNodes) {
-                    // select next node
-                    if (focusOffset >= f.childNodes.length) {
-                        const ne = new Text('');
-                        f.appendChild(ne);
-                        f = ne;
-                    } else {
-                        f = f.childNodes[focusOffset];
-                    }
-                    focusOffset = 0;
-                } else {
-                    if (f.nodeName === 'br' || f.nodeName === 'img') {
-                        const ne = new Text('');
-                        f.parentNode.insertBefore(ne, f);
-                        f = ne;
-                    } else {
-                        const ne = new Text('');
-                        f.appendChild(ne);
-                    }
-                }
-            }
+            if (event.shiftKey) {
+                // getTextNode if not in, if start != end - remove, insert <br> after, make selection after <br> but before <br>
+                let vals = this.tools.getTextNode(a, startOffset);
+                a = vals.node;
+                startOffset = vals.offset;
+                vals = this.tools.getTextNode(f, endOffset);
+                f = vals.node;
+                endOffset = vals.offset;
 
-            if (collapsed) {
-                // TODO a could be not a text node?
-                trackNode = (a as Text).splitText(anchorOffset);
-                this.tools.insertNewBlock(a);
-            } else {
-                const t = (a as Text).splitText(anchorOffset);
+                // remove in between, merge paragraphs if a and f in different nodes
                 if (a.isSameNode(f)) {
-                    trackNode = (f as Text).splitText(focusOffset - anchorOffset);
+                    if (collapsed) {
+                        f = (a as Text).splitText(startOffset);
+                    } else {
+                        (a as Text).splitText(startOffset);
+                        f = (f as Text).splitText(endOffset - startOffset);
+                        a.parentNode.removeChild(a.nextSibling);
+                    }
+                    const ne = document.createElement('br');
+                    this.tools.insertAfter(ne, a);
+                    if (!f.nextSibling) {
+                        f.parentNode.appendChild(document.createElement('br'));
+                    }
+                    trackNode = f as Text;
                 } else {
-                    trackNode = (f as Text).splitText(focusOffset);
-                }
-                let pa = a.parentNode;
-                // remove everything to the right
-                while (!pa.isSameNode(ca)) {
-                    while (a.nextSibling) {
-                        pa.removeChild(a.nextSibling);
+                    (a as Text).splitText(startOffset);
+                    let endOfLine;
+                    while (!a.parentNode.isSameNode(ca)) {
+                        if (!endOfLine && this.tools.isBlock(a.parentNode)) {
+                            endOfLine = a;
+                        }
+                        while (a.nextSibling) {
+                            a.parentNode.removeChild(a.nextSibling);
+                        }
+                        a = a.parentNode;
                     }
-                    pa = pa.parentNode;
-                }
-                // remove everything to the left
-                let pf = trackNode.parentNode;
-                while (!pf.isSameNode(ca)) {
-                    while (trackNode.previousSibling) {
-                        pf.removeChild(trackNode.previousSibling);
+                    let startOfLine;
+                    f = (f as Text).splitText(endOffset);
+                    while (!f.parentNode.isSameNode(ca)) {
+                        if (!startOfLine && this.tools.isBlock(f.parentNode)) {
+                            startOfLine = f;
+                        }
+                        while (f.previousSibling) {
+                            f.parentNode.removeChild(f.previousSibling);
+                        }
+                        f = f.parentNode;
                     }
-                    pf = pf.parentNode;
+                    while (!a.nextSibling.isSameNode(f)) {
+                        a.parentNode.removeChild(a.nextSibling);
+                    }
+                    const ne = document.createElement('br');
+                    this.tools.insertAfter(ne, endOfLine);
+                    while (startOfLine.nextSibling) {
+                        ne.parentNode.appendChild(startOfLine.nextSibling);
+                    }
+                    this.tools.insertAfter(startOfLine, ne);
+                    trackNode = startOfLine as Text;
                 }
-                // remove everything in between    can getChild from cycle above
-                pa = (this.tools.getChild(a, ca) as Node & ParentNode);
-                while (!pa.nextSibling.isSameNode(this.tools.getChild(trackNode, ca))) {
-                    pa.parentNode.removeChild(pa.nextSibling);
+
+            } else {
+
+                const newParagraph = this.tools.makeBlock();
+                if (newParagraph) {
+                    ca = newParagraph;
+                    if (a.isSameNode(this.editorElement.nativeElement)) {
+                        a = a.firstChild;
+                    }
+                    if (f.isSameNode(this.editorElement.nativeElement)) {
+                        f = f.firstChild;
+                    }
                 }
-                this.tools.insertNewBlock(a);
+                // TODO if blockquote - ????????
+                // TODO insert new text node before a?
+                while (a.nodeType !== 3) {
+                    if (a.childNodes) {
+                        // select next node
+                        if (startOffset >= a.childNodes.length) {
+                            const ne = new Text('');
+                            a.appendChild(ne);
+                            a = ne;
+                        } else {
+                            a = a.childNodes[startOffset];
+                        }
+                        startOffset = 0;
+                    } else {
+                        if (a.nodeName === 'br' || a.nodeName === 'img') {
+                            const ne = new Text('');
+                            a.parentNode.insertBefore(ne, a);
+                            a = ne;
+                        } else {
+                            const ne = new Text('');
+                            a.appendChild(ne);
+                        }
+                    }
+                }
+                while (f.nodeType !== 3) {
+                    if (f.childNodes) {
+                        // select next node
+                        if (endOffset >= f.childNodes.length) {
+                            const ne = new Text('');
+                            f.appendChild(ne);
+                            f = ne;
+                        } else {
+                            f = f.childNodes[endOffset];
+                        }
+                        endOffset = 0;
+                    } else {
+                        if (f.nodeName === 'br' || f.nodeName === 'img') {
+                            const ne = new Text('');
+                            f.parentNode.insertBefore(ne, f);
+                            f = ne;
+                        } else {
+                            const ne = new Text('');
+                            f.appendChild(ne);
+                        }
+                    }
+                }
+
+                if (collapsed) {
+                    // TODO a could be not a text node?
+                    const list = this.tools.getParent(a, 'li', undefined);
+                    if (list && !list.textContent) {
+                        const ne = document.createElement('p');
+                        while (list.firstChild) {
+                            ne.appendChild(list.firstChild);
+                        }
+                        ne.appendChild(document.createElement('br'));
+                        // list.parentNode = ol/ul
+                        this.tools.insertAfter(ne, list.parentNode);
+                        trackNode = a as Text;
+                        list.parentNode.removeChild(list);
+                    } else {
+                        trackNode = (a as Text).splitText(startOffset);
+                        this.tools.insertNewBlock(a);
+                    }
+                } else {
+                    const t = (a as Text).splitText(startOffset);
+                    if (a.isSameNode(f)) {
+                        trackNode = (f as Text).splitText(endOffset - startOffset);
+                    } else {
+                        trackNode = (f as Text).splitText(endOffset);
+                    }
+                    let pa = a.parentNode;
+                    // remove everything to the right
+                    while (!pa.isSameNode(ca)) {
+                        while (a.nextSibling) {
+                            pa.removeChild(a.nextSibling);
+                        }
+                        pa = pa.parentNode;
+                    }
+                    // remove everything to the left
+                    let pf = trackNode.parentNode;
+                    while (!pf.isSameNode(ca)) {
+                        while (trackNode.previousSibling) {
+                            pf.removeChild(trackNode.previousSibling);
+                        }
+                        pf = pf.parentNode;
+                    }
+                    // remove everything in between    can getChild from cycle above
+                    pa = (this.tools.getChild(a, ca) as Node & ParentNode);
+                    while (!pa.nextSibling.isSameNode(this.tools.getChild(trackNode, ca))) {
+                        pa.parentNode.removeChild(pa.nextSibling);
+                    }
+                    this.tools.insertNewBlock(a);
+                }
             }
             r.setStart(trackNode, 0);
             r.collapse(true);
@@ -433,5 +518,9 @@ export class EditorComponent implements AfterViewInit {
     clearFormatting(): void {
         if (this.helpPressed) { return; }
         this.buttonTools.clearFormatting();
+    }
+
+    toggleDropdown(dropDown: HTMLDivElement): void {
+        dropDown.classList.toggle('show');
     }
 }

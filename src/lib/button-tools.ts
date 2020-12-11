@@ -82,7 +82,7 @@ export class ButtonTools {
         if (vals.range) {
             rangeStart = vals.range;
         }
-        vals = this.tools.getTextNode(f, endOffset);
+        vals = this.tools.getTextNode(f, endOffset, ca);
         f = vals.node;
         endOffset = vals.offset;
         if (vals.range) {
@@ -172,7 +172,6 @@ export class ButtonTools {
             }
         } else {
             rangeStart = a = (a as Text).splitText(startOffset);
-            console.log(rangeStart);
             (f as Text).splitText(endOffset);
 
             if (this.tools.isSelectionCoveredInTag(a, f, ca, tag, attribute)) {
@@ -203,10 +202,10 @@ export class ButtonTools {
                     }
                     start = start.parentNode;
                 }
-                if (ca.contains(end)) {
+                if (ca.contains(end) && !ca.isSameNode(end)) {
                     let gp = this.tools.getParent(a, tag, attribute);
                     start = this.tools.removeNodeSavingChildren(gp);
-                    while (!start.parentNode.isSameNode(ca)) {
+                    while (!(start.parentNode.isSameNode(ca) || start.isSameNode(ca))) {
                         // check for block?  && !this.tools.isBlock(start)
                         while (start.nextSibling) {
                             this.tools.removeTagNodeOrTagFromChildren(start.nextSibling, tag, attribute);
@@ -305,7 +304,6 @@ export class ButtonTools {
         this.tools.clean();
         this.tools.clean();
         const range = new Range();
-        console.log(rangeStart);
         range.setStart(rangeStart, 0);
         range.setEnd(rangeEnd, (rangeEnd as Text).length);
         document.normalize();
@@ -446,7 +444,7 @@ export class ButtonTools {
             let vals = this.tools.getTextNode(start, startOffset);
             start = vals.node;
             startOffset = vals.offset;
-            vals = this.tools.getTextNode(end, endOffset);
+            vals = this.tools.getTextNode(end, endOffset, ca);
             end = vals.node;
             endOffset = vals.offset;
 

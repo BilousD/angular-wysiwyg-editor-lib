@@ -1,24 +1,17 @@
 <div contenteditable="false" class="plugin-border" #topDivElement>
     <div style="display: flex">
         <span class="plugin-title">Plugin</span>
-        <button mat-icon-button class="plugin-menu-button" aria-label="Plugin control menu" [matMenuTriggerFor]="menu">
-            <mat-icon>more_vert</mat-icon>
+        <button class="plugin-button" title="Remove plugin" (click)="removePlugin()">
+            <img src="data:image/svg+xml;base64,PHN2ZyBoZWlnaHQ9IjUxMnB0IiB2aWV3Qm94PSIwIC04NSA1MTIuMDE2IDUxMiIgd2lkdGg9IjUxMnB0IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Im00NTMuMzQ3NjU2LjAwNzgxMjVoLTI3NC43NzM0MzdjLTE2LjIzNDM3NSAwLTMxLjg3MTA5NCA2LjgwNDY4NzUtNDIuOTIxODc1IDE4LjY4NzQ5OTVsLTEzMS4zNDc2NTYgMTQxLjA3ODEyNmMtNS43MzgyODIgNi4xNDQ1MzEtNS43MzgyODIgMTUuNjYwMTU2IDAgMjEuODAwNzgxbDEzMS4zNDc2NTYgMTQxLjA1ODU5M2MxMS4wNTA3ODEgMTEuOTAyMzQ0IDI2LjY4NzUgMTguNzA3MDMyIDQyLjkyMTg3NSAxOC43MDcwMzJoMjc0Ljc3MzQzN2MzMi4zNjMyODIgMCA1OC42Njc5NjktMjYuMzAwNzgyIDU4LjY2Nzk2OS01OC42NjQwNjN2LTIyNGMwLTMyLjM2MzI4MS0yNi4zMDQ2ODctNTguNjY3OTY4NS01OC42Njc5NjktNTguNjY3OTY4NXptLTM3LjcxNDg0NCAyMzAuODA0Njg3NWM4LjAxOTUzMiA4LjY0MDYyNSA3LjUzMTI1IDIyLjE0NDUzMS0xLjEwOTM3NCAzMC4xNjc5NjktNC4wOTc2NTcgMy44MTY0MDYtOS4zMjQyMTkgNS42OTUzMTItMTQuNTI3MzQ0IDUuNjk1MzEyLTUuNzM4MjgyIDAtMTEuNDM3NS0yLjI4NTE1Ni0xNS42MTcxODgtNi44MDQ2ODdsLTUzLjY5NTMxMi01Ny44NTkzNzUtNTMuNzE4NzUgNTcuODM1OTM3Yy00LjE3OTY4OCA0LjUyMzQzOC05Ljg5ODQzOCA2LjgwNDY4OC0xNS42MTcxODggNi44MDQ2ODgtNS4yMDMxMjUgMC0xMC40MTAxNTYtMS44NzUtMTQuNTI3MzQ0LTUuNjk1MzEzLTguNjE3MTg3LTguMDE5NTMxLTkuMTI4OTA2LTIxLjUyMzQzNy0xLjEwOTM3NC0zMC4xNjQwNjJsNTUuODc1LTYwLjExNzE4OC01NS44NTE1NjMtNjAuMTQwNjI1Yy04LjAyMzQzNy04LjY0MDYyNS03LjUzMTI1LTIyLjE0NDUzMSAxLjEwOTM3NS0zMC4xNjQwNjIgOC41OTc2NTYtOC4wMjM0MzggMjIuMTQ0NTMxLTcuNTUwNzgyIDMwLjE0NDUzMSAxLjEwOTM3NWw1My43MTQ4NDQgNTcuODM1OTM3IDUzLjcxODc1LTU3LjgzNTkzN2M3Ljk3NjU2My04LjY2MDE1NyAyMS41MjM0MzctOS4xMzI4MTMgMzAuMTQ0NTMxLTEuMTA5Mzc1IDguNjE3MTg4IDguMDE5NTMxIDkuMTI4OTA2IDIxLjUyMzQzNyAxLjEwOTM3NSAzMC4xNjQwNjJsLTU1Ljg5NDUzMSA2MC4xNDA2MjV6bTAgMCIvPjwvc3ZnPg==" />
         </button>
-        <mat-menu #menu="matMenu">
-            <button mat-menu-item (click)="removePlugin()">
-                <mat-icon>delete_forever</mat-icon>
-                <span>Remove</span>
-            </button>
-        </mat-menu>
     </div>
     <div style="display: flex">
         <form #myForm="ngForm">
-            <mat-form-field appearance="standard">
-                <mat-label>Plugins:</mat-label>
-                <mat-select [(value)]="selected">
-                    <mat-option [value]="param" *ngFor="let param of params">{{ param.selector }}</mat-option>
-                </mat-select>
-            </mat-form-field>
+            <label>Plugins:
+                <select><!--  [(value)]="selected" -->
+                    <option [value]="param" *ngFor="let param of params">{{ param.selector }}</option>
+                </select>
+            </label>
             <label class="plugin-label" *ngIf="selected">
                 <input *ngFor="let attrib of selected.attributes"
                        [placeholder]="attrib"

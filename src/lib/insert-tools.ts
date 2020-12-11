@@ -50,6 +50,7 @@ export class InsertTools {
     insertTable(cells, rows): void {
         if (rows < 1 || cells < 1) { return; }
         const s = document.getSelection();
+
         const newNode = document.createElement('table');
         newNode.style.width = '100%';
         newNode.style.maxWidth = '100%';
@@ -60,6 +61,7 @@ export class InsertTools {
 
 
         if (!this.tools.isInDiv(s)) {
+            this.tools.makeBlock();
             this.editorElement.appendChild(newNode);
             this.editorElement.appendChild(document.createElement('br'));
         } else {

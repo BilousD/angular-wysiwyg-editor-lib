@@ -12,11 +12,12 @@
     border: thin solid black;
     padding: 3px;
 }
-.plugin-menu-button {
-    width: auto;
-    height: auto;
+.plugin-button {
+    height: 21px;
+    width: 28px;
+    margin: 8px 5px 8px 5px;
+    border-radius: 6px 6px 6px 6px;
     line-height: 0;
-    margin-left: auto;
 }
 .plugin-title {
     justify-self: center;
