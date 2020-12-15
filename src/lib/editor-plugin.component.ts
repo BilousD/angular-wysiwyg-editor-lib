@@ -3,9 +3,9 @@ import {Form, NgForm} from '@angular/forms';
 
 @Component({
     // tslint:disable-next-line:component-selector
-  selector: 'editor-plugin',
-  templateUrl: './editor-plugin.component.html',
-  styleUrls: ['./editor-plugin.component.scss']
+    selector: 'editor-plugin',
+    templateUrl: './editor-plugin.component.html',
+    styleUrls: ['./editor-plugin.component.scss']
 })
 export class EditorPluginComponent {
     // TODO discard changes button?
@@ -37,12 +37,12 @@ export class EditorPluginComponent {
         plugin.parentNode.removeChild(plugin);
     }
 
-    save(form: NgForm): boolean {
-        if (!this.selected) {
-            return false;
-        }
+    save(form: NgForm): void {
         // TODO remove attributes of other plugins
         const attributes = form.form.value;
+        if (!this.selected) {
+            return;
+        }
         const newPlugin = document.createElement(this.selected.selector);
         Object.keys(attributes).forEach(key => {
             if (attributes[key]) {
@@ -60,7 +60,6 @@ export class EditorPluginComponent {
             newPlugin.innerHTML = '';
         }
         this.plugin = newPlugin;
-        return true;
     }
 
     getAttribute(attrib: string): string {
@@ -86,12 +85,11 @@ export class EditorPluginComponent {
     }
 
     getTransformedInner(): string {
-        const isSaved = this.save(this.form);
-        if (isSaved) {
-            return '<editor-plugin>' + this.plugin.outerHTML + '</editor-plugin>';
-        } else {
+        this.save(this.form);
+        if (!this.plugin) {
             return '';
         }
+        return '<editor-plugin>' + this.plugin.outerHTML + '</editor-plugin>';
     }
 
 }

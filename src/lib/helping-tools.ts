@@ -517,9 +517,10 @@ export class HelpingTools {
                 } else {
                     let ps = c.previousSibling;
                     while (ps) {
-                        if (ps.nodeName.toLowerCase() === e && this.compareAttributes(ps, c)) {
+                        if ((ps.nodeName.toLowerCase() === e && this.compareAttributes(ps, c))
+                            || (ps.nodeType === 3 && (ps as Text).length < 1)) {
                             // if sibling marked for deleting - skip it
-                            if (markDeleting.indexOf(ps) < 0) {
+                            if ((markDeleting.indexOf(ps) < 0) && ps.nodeType === 1) {
                                 while (c.firstChild) {
                                     ps.appendChild(c.firstChild);
                                 }
@@ -599,6 +600,7 @@ export class HelpingTools {
     createElement(tag, attribute): Element {
         if (attribute) {
             const ne = document.createElement(tag);
+            // console.log(attribute[1]);
             ne.setAttribute(attribute[0], attribute[1]);
             return ne;
         } else {
@@ -647,7 +649,7 @@ export class HelpingTools {
                     c = c.lastChild;
                 }
                 if (c.nodeType !== 3) {
-                    console.log('something wong');
+                    console.log('something wrong');
                 }
                 r.setEnd(c, (c as Text).length);
                 s.removeAllRanges();

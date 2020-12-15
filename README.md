@@ -14,7 +14,10 @@ If you are inserting plugins outside of editor, be sure it is covered in `<edito
 and it is outside of block of text (outside of `<p>`, `<h1>` etc.).
 There is no guarantee that custom tags, and plugin tags outside of blocks will be displayed or edited properly. 
   
-
-
+##License
+This project uses icons made by Pixel perfect from www.flaticon.com    
+      
+    
+   
 This library was generated with [Angular CLI](https://github.com/angular/angular-cli) version 10.1.6.
 

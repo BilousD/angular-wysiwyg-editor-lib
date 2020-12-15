@@ -11,7 +11,6 @@ import {
     ViewChild
 } from '@angular/core';
 import {HelpingTools} from './helping-tools';
-import {MatDialog} from '@angular/material/dialog';
 import {EditorPluginComponent} from './editor-plugin.component';
 import {ButtonTools} from './button-tools';
 import {InsertTools} from './insert-tools';
@@ -318,7 +317,6 @@ export class EditorComponent implements AfterViewInit {
 
     onKeyDown(event: KeyboardEvent): void {
         if (this.helpPressed) { return; }
-        // console.log(event);
         // TODO using deprecated thing
         const char = String.fromCharCode(event.charCode);
         if (this.caretInZeroText) {
@@ -334,8 +332,8 @@ export class EditorComponent implements AfterViewInit {
             }
         }
         if (event.ctrlKey && (event.key === 'z')) {
-            console.log('ctrl+z');
-            console.log(event);
+            // console.log('ctrl+z');
+            // console.log(event);
         }
         this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }

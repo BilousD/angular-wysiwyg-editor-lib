@@ -91,9 +91,10 @@ export class ButtonTools {
 
         if (r.collapsed) {
 // START = END -------------------------------------------------------------------------------------
-            let txt = new Text('');
+            const txt = new Text('');
             if ((a as Text).length === 0) {
-                txt = a as Text;
+                // just to be safe
+                a = (a as Text).splitText(0);
             } else {
                 a = (a as Text).splitText(startOffset);
             }
@@ -117,18 +118,23 @@ export class ButtonTools {
                 }
                 // TODO tp.nextSibling should be clone of tp (need testing)
                 tp.parentNode.insertBefore(ne, tp.nextSibling);
+                caretInZeroText = false;
             } else {
                 const ne = this.tools.createElement(tag, attribute);
                 a.parentNode.insertBefore(ne, a);
                 ne.appendChild(txt);
+                caretInZeroText = true;
             }
-            caretInZeroText = true;
+            if (!caretInZeroText) {
+                this.tools.clean();
+                this.tools.clean();
+            }
             const range2 = new Range();
             range2.setStart(txt, 0);
             range2.collapse(true);
             s.removeAllRanges();
             s.addRange(range2);
-            return;
+            return caretInZeroText;
         }
 
         if (a.isSameNode(f)) {
@@ -304,6 +310,7 @@ export class ButtonTools {
         this.tools.clean();
         this.tools.clean();
         const range = new Range();
+        console.log(rangeStart);
         range.setStart(rangeStart, 0);
         range.setEnd(rangeEnd, (rangeEnd as Text).length);
         document.normalize();
