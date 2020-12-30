@@ -63,7 +63,9 @@ export class InsertTools {
         if (!this.tools.isInDiv(s)) {
             this.tools.makeBlock();
             this.editorElement.appendChild(newNode);
-            this.editorElement.appendChild(document.createElement('br'));
+            const p = document.createElement('p');
+            p.appendChild(document.createElement('br'));
+            this.editorElement.appendChild(p);
         } else {
             const r = s.getRangeAt(0);
             let f = r.endContainer;
@@ -77,7 +79,13 @@ export class InsertTools {
             if (f.isSameNode(this.editorElement)) {
                 // div, so offsets counts differently
                 this.tools.insertAfter(newNode, f.childNodes[offset]);
+                if (!newNode.nextSibling) {
+                    const p = document.createElement('p');
+                    p.appendChild(document.createElement('br'));
+                    this.tools.insertAfter(p, newNode);
+                }
             } else if (offset === 0) {
+                // WHAT IS THIS?
                 f.parentNode.insertBefore(newNode, f);
             } else {
                 this.tools.insertAfter(newNode, f);

@@ -14,6 +14,7 @@ import {HelpingTools} from './helping-tools';
 import {EditorPluginComponent} from './editor-plugin.component';
 import {ButtonTools} from './button-tools';
 import {InsertTools} from './insert-tools';
+import {Align} from './types';
 
 @Component({
     selector: 'lib-wysiwyg-editor',
@@ -27,7 +28,6 @@ export class EditorComponent implements AfterViewInit {
     insertTools: InsertTools;
 
     selection: Selection;
-    innerHTMLasString = '';
     regexParagraph = /<\/p*(h\d)*(pre)*(blockquote)*>/g;
     regexBR = /<br>/g;
     replaceBR = '<br>\n';
@@ -40,11 +40,10 @@ export class EditorComponent implements AfterViewInit {
 
     boldPressed: boolean;
     underlinePressed: boolean;
+    alignPressed: Align;
     caretInZeroText = false;
 
     imageControlsHidden = true;
-    imageControlsTop = 0;
-    imageControlsLeft = 0;
     imageHeightInput = '';
     imageWidthInput = '';
     clickedImage: HTMLImageElement;
@@ -91,6 +90,9 @@ export class EditorComponent implements AfterViewInit {
         this.editorElement.nativeElement.addEventListener('selectionchange', () => {
             this.boldPressed = false;
             this.underlinePressed = false;
+            if (document.getSelection().rangeCount < 1) {
+                return;
+            }
             const r = document.getSelection().getRangeAt(0);
             if (this.tools.isSelectionCoveredInTag(r.startContainer, r.endContainer, r.commonAncestorContainer, 'b')) {
                 this.boldPressed = true;
@@ -98,9 +100,10 @@ export class EditorComponent implements AfterViewInit {
             if (this.tools.isSelectionCoveredInTag(r.startContainer, r.endContainer, r.commonAncestorContainer, 'u')) {
                 this.underlinePressed = true;
             }
+            this.alignPressed = this.tools.isRangeAligned(r);
         });
         window.onclick = (event) => {
-            if (!(event.target.matches('.dropbtn') || event.target.parentNode.matches('.dropbtn'))) {
+            if (!(event.target.matches('.dropbtn') || (event.target.parentElement && event.target.parentElement.matches('.dropbtn')))) {
                 const dropdowns = document.getElementsByClassName('dropdown-content');
                 let i;
                 for (i = 0; i < dropdowns.length; i++) {
@@ -124,7 +127,7 @@ export class EditorComponent implements AfterViewInit {
             event.preventDefault();
             const s = document.getSelection();
             if (!this.tools.isInDiv(s)) {
-                console.error('Error: Selected text does not belong to editor element');
+                // console.error('Error: Selected text does not belong to editor element'); // should it throw error?
                 return;
             }
             const r = new Range();
@@ -309,10 +312,6 @@ export class EditorComponent implements AfterViewInit {
             document.getSelection().removeAllRanges();
             document.getSelection().addRange(r);
         }
-        // this.output.emit(this.editorElement.nativeElement.innerHTML
-        //     .replace(/<\/p*(h\d)*(pre)*(blockquote)*>/g, '$&\n')
-        //     .replace(/<br>/g, '<br>\n'));
-        this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
 
     onKeyDown(event: KeyboardEvent): void {
@@ -335,12 +334,10 @@ export class EditorComponent implements AfterViewInit {
             // console.log('ctrl+z');
             // console.log(event);
         }
-        this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
     block(tag: string): void {
         if (this.helpPressed) { return; }
         this.buttonTools.block(tag);
-        this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
 
     tag(tag, attribute?): void {
@@ -349,7 +346,6 @@ export class EditorComponent implements AfterViewInit {
         if (caretInZeroText) {
             this.caretInZeroText = caretInZeroText;
         }
-        this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
 
     getInnerHTML(): string {
@@ -374,6 +370,9 @@ export class EditorComponent implements AfterViewInit {
         const e = document.getElementById(data);
         if (e) {
             e.removeAttribute('id');
+            if (ev.target.isSameNode(e)) {
+                return;
+            }
             if (ev.target.isSameNode(this.editorElement.nativeElement) &&
                 this.tools.isBlock(this.editorElement.nativeElement.lastChild)) {
                 ev.target.lastChild.appendChild(e);
@@ -391,7 +390,6 @@ export class EditorComponent implements AfterViewInit {
                 ev.target.appendChild(img);
             }
         }
-        this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
     dragStart(ev): void {
         if (ev.target.nodeName.toLowerCase() === 'img') {
@@ -403,32 +401,51 @@ export class EditorComponent implements AfterViewInit {
     onClick(event: MouseEvent): void {
         if (this.helpPressed) { return; }
         const target = event.target as Element;
-        if (target instanceof HTMLImageElement) {
+        if (target.nodeName === 'P' && (target as HTMLElement).style.resize === 'both') {
+            // a
+        } else if (target instanceof HTMLImageElement) {
             this.imageControlsHidden = false;
             this.tableControlsHidden = true;
-            this.imageControlsTop = event.pageY + 5;
-            this.imageControlsLeft = event.pageX + 5;
+            if (!target.isSameNode(this.clickedImage)) {
+                this.tools.saveResizedImage(this.clickedImage);
+            }
+            this.clickedImage = target;
+            const p = document.createElement('p');
+            p.style.cssText = 'resize: both; overflow: hidden; display: inline-block; margin: 0;';
+            if (target.style.width) {
+                p.style.width = target.style.width;
+            }
+            if (target.style.height) {
+                p.style.height += target.style.height;
+            }
+            target.style.width = '100%';
+            target.style.height = '100%';
+            target.parentNode.insertBefore(p, target);
+            p.appendChild(target);
             if (target.style['max-height']) {
                 this.imageHeightInput = target.style['max-height'];
             }
             if (target.style['max-width']) {
                 this.imageWidthInput = target.style['max-width'];
             }
-            this.clickedImage = target;
         } else if (target instanceof HTMLTableCellElement) {
+            if (!this.imageControlsHidden) {
+                this.tools.saveResizedImage(this.clickedImage);
+            }
             this.imageControlsHidden = true;
             this.tableControlsHidden = false;
-            this.tableControlsTop = event.pageY + 5;
-            this.tableControlsLeft = event.pageX + 5;
+
             this.clickedCell = target;
         } else {
+            if (!this.imageControlsHidden) {
+                this.tools.saveResizedImage(this.clickedImage);
+            }
             this.imageControlsHidden = true;
             this.tableControlsHidden = true;
         }
         // if clicked on image - change div position to click position, and make div visible
         // also remember image that got clicked on (change remembered on each image click)
         // if after clicked on div -
-        this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
 
     resizeImage(height, width): void {
@@ -447,14 +464,12 @@ export class EditorComponent implements AfterViewInit {
         } else {
             this.clickedImage.style['max-width'] = width;
         }
-        this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
 
     floatImage(float, margin): void {
         if (this.helpPressed) { return; }
         this.clickedImage.style.float = float;
         this.clickedImage.style.margin = margin;
-        this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
 
     insertPlugin(): void {
@@ -510,7 +525,6 @@ export class EditorComponent implements AfterViewInit {
     transformToList(ordered?: boolean): void {
         if (this.helpPressed) { return; }
         this.buttonTools.transformToList(ordered);
-        this.innerHTMLasString = this.editorElement.nativeElement.innerHTML;
     }
 
     clearFormatting(): void {
@@ -520,5 +534,10 @@ export class EditorComponent implements AfterViewInit {
 
     toggleDropdown(dropDown: HTMLDivElement): void {
         dropDown.classList.toggle('show');
+    }
+
+    align(al: string): void {
+        if (this.helpPressed) { return; }
+        this.buttonTools.align(al);
     }
 }

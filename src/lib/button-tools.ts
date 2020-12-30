@@ -60,7 +60,9 @@ export class ButtonTools {
     tag(tag, attribute?): boolean {
         // check selection to be inside div
         const s = document.getSelection();
-
+        if (s.rangeCount < 1) {
+            return ;
+        }
         const r = s.getRangeAt(0);
         let a = r.startContainer;
         let f = r.endContainer;
@@ -561,6 +563,43 @@ export class ButtonTools {
                     start = p;
                 }
                 this.tools.insertAfter(finishProduct, start);
+            }
+        }
+    }
+
+    align(al: string): void {
+        // get anchor, focus, get closest block element, put text-align style, if focus in another block - put in focus and in between
+        const s = document.getSelection();
+
+        if (!this.tools.isInDiv(s)) {
+            return;
+        }
+        const r = s.getRangeAt(0);
+        let start = r.startContainer;
+        start = this.tools.putInOffset(start, r.startOffset);
+        if (this.tools.enumToAlign(this.tools.isRangeAligned(r)) === al) {
+            al = '';
+        }
+        start = this.tools.getBlock(start);
+        (start as HTMLParagraphElement).style.textAlign = al;
+        const ca = r.commonAncestorContainer;
+        if (!(r.collapsed || start.contains(ca))) {
+            let end = r.endContainer;
+            end = this.tools.putInOffset(end, r.endOffset);
+            (end as HTMLParagraphElement).style.textAlign = al;
+
+            while (!start.isSameNode(ca)) {
+                this.tools.alignSiblingBlocks(start.nextSibling, al);
+                start = start.parentNode;
+            }
+            while (!end.isSameNode(ca)) {
+                this.tools.alignSiblingBlocks(end.previousSibling, al, true);
+                end = end.parentNode;
+            }
+            start = start.nextSibling;
+            while (!start.isSameNode(end)) {
+                this.tools.alignSiblingBlocks(start.firstChild, al);
+                start = start.nextSibling;
             }
         }
     }
