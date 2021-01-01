@@ -586,13 +586,21 @@ export class ButtonTools {
         if (!(r.collapsed || start.contains(ca))) {
             let end = r.endContainer;
             end = this.tools.putInOffset(end, r.endOffset);
+            end = this.tools.getBlock(end);
             (end as HTMLParagraphElement).style.textAlign = al;
 
-            while (!start.isSameNode(ca)) {
+            while (!start.parentNode.isSameNode(ca)) {
+                if (start.isSameNode(ca)) {
+                    // really bad thing
+                    break;
+                }
                 this.tools.alignSiblingBlocks(start.nextSibling, al);
                 start = start.parentNode;
             }
-            while (!end.isSameNode(ca)) {
+            while (!end.parentNode.isSameNode(ca)) {
+                if (end.isSameNode(ca)) {
+                    break;
+                }
                 this.tools.alignSiblingBlocks(end.previousSibling, al, true);
                 end = end.parentNode;
             }
