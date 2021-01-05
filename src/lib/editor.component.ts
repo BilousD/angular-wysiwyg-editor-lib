@@ -403,7 +403,7 @@ export class EditorComponent implements AfterViewInit {
         const target = event.target as Element;
         if (target.nodeName === 'P' && (target as HTMLElement).style.resize === 'both') {
             // a
-        } else if (target instanceof HTMLImageElement) {
+        } else if (target instanceof HTMLImageElement && target.classList.contains('editor-icon-img')) {
             this.imageControlsHidden = false;
             this.tableControlsHidden = true;
             if (!target.isSameNode(this.clickedImage)) {

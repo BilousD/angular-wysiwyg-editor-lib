@@ -32,7 +32,7 @@ export class InsertTools {
             // problem: if no block, tag will be inserted, but it will be inside one when blocks will be created
             this.tools.makeBlock();
 
-            while (this.tools.isBlock(f) || f.parentNode.isSameNode(this.editorElement)) {
+            while (!f.isSameNode(this.editorElement) && !this.tools.isBlock(f) && !f.parentNode.isSameNode(this.editorElement)) {
                 f = f.parentNode;
             }
             if (offset === 0 && collapsed) {
@@ -44,6 +44,7 @@ export class InsertTools {
 
         const ref = factory.create(this.injector, null, newNode);
         ref.instance.params = pluginParameters;
+        ref.instance.selected = pluginParameters[0];
         return ref;
     }
 
