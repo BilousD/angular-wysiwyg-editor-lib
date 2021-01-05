@@ -248,12 +248,40 @@ export class ButtonTools {
 // ADDING TAG --------------------------------------------------------------------------------------
                 let tagParent = this.tools.getParent(a, tag, attribute);
                 if (tagParent) {
-                    if (!tagParent.parentNode.isSameNode(ca) && !this.tools.isBlock(tagParent.parentNode)) {
-                        this.tools.coverToRight(tagParent, ca, tag, attribute);
+                    if (!tagParent.parentNode.isSameNode(ca)) {
+                        if (!this.tools.isBlock(tagParent.parentNode)) {
+                            let returnedBlock = this.tools.coverToRight(tagParent, ca, tag, attribute);
+                            // while returnedBlock is not child of ca, cover blocks in tag
+                            returnedBlock = this.tools.coverBlocksToRight(returnedBlock, ca, tag, attribute);
+                        } else {
+                            try {
+                                while (tagParent.nextSibling) {
+                                    tagParent.appendChild(tagParent.nextSibling);
+                                }
+                            } catch (e) {
+                                console.error('if you see this error - try contacting me, ' +
+                                    'and send this message. I hope this error wont happen, but to be safe...');
+                            }
+                            this.tools.coverBlocksToRight(tagParent, ca, tag, attribute);
+                        }
+                    } else {
+                        while (tagParent.nextSibling) {
+                            tagParent.appendChild(tagParent.nextSibling);
+                        }
                     }
                 } else {
-                    if (!a.parentNode.isSameNode(ca) && !this.tools.isBlock(a.parentNode)) {
-                        this.tools.coverToRight(a, ca, tag, attribute);
+                    if (!a.parentNode.isSameNode(ca)) {
+                        if (!this.tools.isBlock(a.parentNode)) {
+                            let returnedBlock = this.tools.coverToRight(a, ca, tag, attribute);
+                            returnedBlock = this.tools.coverBlocksToRight(returnedBlock, ca, tag, attribute);
+                        } else {
+                            const ne = this.tools.createElement(tag, attribute);
+                            a.parentNode.insertBefore(ne, a);
+                            while (ne.nextSibling) {
+                                ne.appendChild(ne.nextSibling);
+                            }
+                            this.tools.coverBlocksToRight(ne.parentNode, ca, tag, attribute);
+                        }
                     } else {
                         this.tools.coverNodeInNewElement(a, tag, attribute);
                     }
@@ -264,7 +292,7 @@ export class ButtonTools {
 
                 let start = this.tools.getChild(a, ca).nextSibling;
                 const end = this.tools.getChild(f, ca);
-                while (!start.isSameNode(end)) {
+                while (!start.isSameNode(end)) {    // cover in tag nodes between start and end on level below ca
                     if (start.nodeType === 1) {
                         if (start.nodeName.toLowerCase() !== 'editor-plugin') {
                             const collection = (start as Element).getElementsByTagName(tag);
@@ -293,14 +321,37 @@ export class ButtonTools {
                     }
                 }
 
-                tagParent = this.tools.getParent(f, tag, attribute);
+                tagParent = this.tools.getParent(f, tag, attribute); // cover end node below ca
                 if (tagParent) {
-                    if (!tagParent.parentNode.isSameNode(ca) && !this.tools.isBlock(tagParent.parentNode)) {
-                        this.tools.coverToLeft(tagParent, ca, tag, attribute);
+                    if (!tagParent.parentNode.isSameNode(ca)) {
+                        if (!this.tools.isBlock(tagParent.parentNode)) {
+                            let returnedBlock = this.tools.coverToLeft(tagParent, ca, tag, attribute);
+                            returnedBlock = this.tools.coverBlocksToLeft(returnedBlock, ca, tag, attribute);
+                        } else {
+                            while (tagParent.previousSibling) {
+                                tagParent.insertBefore(tagParent.previousSibling, tagParent.firstChild);
+                            }
+                            this.tools.coverBlocksToLeft(tagParent, ca, tag, attribute);
+                        }
+                    } else {
+                        while (tagParent.previousSibling) {
+                            tagParent.insertBefore(tagParent.previousSibling, tagParent.firstChild);
+                        }
                     }
                 } else {
-                    if (!f.parentNode.isSameNode(ca) && !this.tools.isBlock(f.parentNode)) {
-                        this.tools.coverToLeft(f, ca, tag, attribute);
+                    if (!f.parentNode.isSameNode(ca)) {
+                        if (!this.tools.isBlock(f.parentNode)) {
+                            let returnedBlock = this.tools.coverToLeft(f, ca, tag, attribute);
+                            returnedBlock = this.tools.coverBlocksToLeft(returnedBlock, ca, tag, attribute);
+                        } else {
+                            const ne = this.tools.createElement(tag, attribute);
+                            f.parentNode.insertBefore(ne, f);
+                            ne.appendChild(f);
+                            while (ne.previousSibling) {
+                                ne.insertBefore(ne.previousSibling, ne.firstChild);
+                            }
+                            this.tools.coverBlocksToLeft(ne.parentNode, ca, tag, attribute);
+                        }
                     } else {
                         this.tools.coverNodeInNewElement(f, tag, attribute);
                     }
@@ -312,7 +363,6 @@ export class ButtonTools {
         this.tools.clean();
         this.tools.clean();
         const range = new Range();
-        console.log(rangeStart);
         range.setStart(rangeStart, 0);
         range.setEnd(rangeEnd, (rangeEnd as Text).length);
         document.normalize();

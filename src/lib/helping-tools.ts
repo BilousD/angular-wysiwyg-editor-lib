@@ -273,6 +273,59 @@ export class HelpingTools {
         }
     }
 
+    coverBlock(block, tag, attribute): void {
+        const collection = (block as Element).getElementsByTagName(tag);
+        // tslint:disable-next-line:prefer-for-of
+        for (let i = 0; i < collection.length; i++) {
+            this.removeNodeSavingChildren(collection[i]);
+        }
+
+        // TODO start.firstChild could be block if nested blockquotes
+        if (this.isBlock(block.firstChild)) {
+            const col = block.childNodes;
+            // tslint:disable-next-line:prefer-for-of
+            for (let i = 0; i < col.length; i++) {
+                this.coverBlock(col[i], tag, attribute);
+            }
+        } else {
+            const ne = this.createElement(tag, attribute);
+            while (block.firstChild) {
+                ne.appendChild(block.firstChild);
+            }
+            block.appendChild(ne);
+        }
+    }
+
+    /**
+     * covers blocks to right with tag, until children of end node
+     * @param start
+     * @param end
+     * @param tag
+     * @param attribute
+     */
+    coverBlocksToRight(start, end, tag, attribute): Node {
+        while (!start.parentNode.isSameNode(end) && !start.isSameNode(end)) {
+            let next = start.nextSibling;
+            while (next) {
+                this.coverBlock(next, tag, attribute);
+                next = next.nextSibling;
+            }
+            start = start.parentNode;
+        }
+        return start;
+    }
+    coverBlocksToLeft(start, end, tag, attribute): Node {
+        while (!start.parentNode.isSameNode(end) && !start.isSameNode(end)) {
+            let prev = start.previousSibling;
+            while (prev) {
+                this.coverBlock(prev, tag, attribute);
+                prev = prev.previousSibling;
+            }
+            start = start.parentNode;
+        }
+        return start;
+    }
+
     /**
      * covers node and next siblings
      * @param node -

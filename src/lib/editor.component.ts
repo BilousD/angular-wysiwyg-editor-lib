@@ -87,20 +87,22 @@ export class EditorComponent implements AfterViewInit {
         this.buttonTools = new ButtonTools(this.editorElement.nativeElement, this.tools);
         this.insertTools = new InsertTools(this.editorElement.nativeElement, this.tools, this.resolver, this.injector);
 
-        this.editorElement.nativeElement.addEventListener('selectionchange', () => {
+        document.addEventListener('selectionchange', (e) => {
             this.boldPressed = false;
             this.underlinePressed = false;
-            if (document.getSelection().rangeCount < 1) {
-                return;
+            if (this.editorElement.nativeElement.contains(e.target as Node)) {
+                if (document.getSelection().rangeCount < 1) {
+                    return;
+                }
+                const r = document.getSelection().getRangeAt(0);
+                if (this.tools.isSelectionCoveredInTag(r.startContainer, r.endContainer, r.commonAncestorContainer, 'b')) {
+                    this.boldPressed = true;
+                }
+                if (this.tools.isSelectionCoveredInTag(r.startContainer, r.endContainer, r.commonAncestorContainer, 'u')) {
+                    this.underlinePressed = true;
+                }
+                this.alignPressed = this.tools.isRangeAligned(r);
             }
-            const r = document.getSelection().getRangeAt(0);
-            if (this.tools.isSelectionCoveredInTag(r.startContainer, r.endContainer, r.commonAncestorContainer, 'b')) {
-                this.boldPressed = true;
-            }
-            if (this.tools.isSelectionCoveredInTag(r.startContainer, r.endContainer, r.commonAncestorContainer, 'u')) {
-                this.underlinePressed = true;
-            }
-            this.alignPressed = this.tools.isRangeAligned(r);
         });
         window.onclick = (event) => {
             if (!(event.target.matches('.dropbtn') || (event.target.parentElement && event.target.parentElement.matches('.dropbtn')))) {
@@ -364,6 +366,11 @@ export class EditorComponent implements AfterViewInit {
         ev.preventDefault();
     }
     drop(ev): void {
+        const types = ev.dataTransfer.types;
+
+        // TODO test if it has errors
+        if (types.length < 3 && types.indexOf('text/plain') > -1) { return; }
+
         ev.preventDefault();
         if (this.helpPressed) { return; }
         const data = ev.dataTransfer.getData('text');
@@ -403,7 +410,7 @@ export class EditorComponent implements AfterViewInit {
         const target = event.target as Element;
         if (target.nodeName === 'P' && (target as HTMLElement).style.resize === 'both') {
             // a
-        } else if (target instanceof HTMLImageElement && target.classList.contains('editor-icon-img')) {
+        } else if (target instanceof HTMLImageElement && !target.classList.contains('editor-icon-img')) {
             this.imageControlsHidden = false;
             this.tableControlsHidden = true;
             if (!target.isSameNode(this.clickedImage)) {

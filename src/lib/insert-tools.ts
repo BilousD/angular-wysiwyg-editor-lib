@@ -32,13 +32,17 @@ export class InsertTools {
             // problem: if no block, tag will be inserted, but it will be inside one when blocks will be created
             this.tools.makeBlock();
 
-            while (!f.isSameNode(this.editorElement) && !this.tools.isBlock(f) && !f.parentNode.isSameNode(this.editorElement)) {
-                f = f.parentNode;
-            }
-            if (offset === 0 && collapsed) {
-                f.parentNode.insertBefore(newNode, f);
+            if (f.isSameNode(this.editorElement)) {
+                this.tools.insertAfter(newNode, this.editorElement.childNodes[offset]);
             } else {
-                this.tools.insertAfter(newNode, f);
+                while (!f.isSameNode(this.editorElement) && !this.tools.isBlock(f) && !f.parentNode.isSameNode(this.editorElement)) {
+                    f = f.parentNode;
+                }
+                if (offset === 0 && collapsed) {
+                    f.parentNode.insertBefore(newNode, f);
+                } else {
+                    this.tools.insertAfter(newNode, f);
+                }
             }
         }
 
