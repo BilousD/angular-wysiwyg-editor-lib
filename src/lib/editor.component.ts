@@ -3,7 +3,7 @@ import {
     ChangeDetectorRef,
     Component, ComponentFactoryResolver,
     ElementRef,
-    EventEmitter, Injector,
+    EventEmitter, HostListener, Injector,
     Input,
     OnChanges,
     OnInit,
@@ -86,36 +86,39 @@ export class EditorComponent implements AfterViewInit {
         this.tools = new HelpingTools(this.editorElement.nativeElement);
         this.buttonTools = new ButtonTools(this.editorElement.nativeElement, this.tools);
         this.insertTools = new InsertTools(this.editorElement.nativeElement, this.tools, this.resolver, this.injector);
+    }
 
-        document.addEventListener('selectionchange', (e) => {
-            this.boldPressed = false;
-            this.underlinePressed = false;
-            if (this.editorElement.nativeElement.contains(e.target as Node)) {
-                if (document.getSelection().rangeCount < 1) {
-                    return;
-                }
-                const r = document.getSelection().getRangeAt(0);
-                if (this.tools.isSelectionCoveredInTag(r.startContainer, r.endContainer, r.commonAncestorContainer, 'b')) {
-                    this.boldPressed = true;
-                }
-                if (this.tools.isSelectionCoveredInTag(r.startContainer, r.endContainer, r.commonAncestorContainer, 'u')) {
-                    this.underlinePressed = true;
-                }
-                this.alignPressed = this.tools.isRangeAligned(r);
+    @HostListener('document:selectionchange', ['$event'])
+    selectionChange(e): void {
+        this.boldPressed = false;
+        this.underlinePressed = false;
+        if (this.editorElement.nativeElement.contains(e.target as Node)) {
+            if (document.getSelection().rangeCount < 1) {
+                return;
             }
-        });
-        window.onclick = (event) => {
-            if (!(event.target.matches('.dropbtn') || (event.target.parentElement && event.target.parentElement.matches('.dropbtn')))) {
-                const dropdowns = document.getElementsByClassName('dropdown-content');
-                let i;
-                for (i = 0; i < dropdowns.length; i++) {
-                    const openDropdown = dropdowns[i];
-                    if (openDropdown.classList.contains('show')) {
-                        openDropdown.classList.remove('show');
-                    }
+            const r = document.getSelection().getRangeAt(0);
+            if (this.tools.isSelectionCoveredInTag(r.startContainer, r.endContainer, r.commonAncestorContainer, 'b')) {
+                this.boldPressed = true;
+            }
+            if (this.tools.isSelectionCoveredInTag(r.startContainer, r.endContainer, r.commonAncestorContainer, 'u')) {
+                this.underlinePressed = true;
+            }
+            this.alignPressed = this.tools.isRangeAligned(r);
+        }
+    }
+
+    @HostListener('window:onclick', ['$event'])
+    click(event): void {
+        if (!(event.target.matches('.dropbtn') || (event.target.parentElement && event.target.parentElement.matches('.dropbtn')))) {
+            const dropdowns = document.getElementsByClassName('dropdown-content');
+            let i;
+            for (i = 0; i < dropdowns.length; i++) {
+                const openDropdown = dropdowns[i];
+                if (openDropdown.classList.contains('show')) {
+                    openDropdown.classList.remove('show');
                 }
             }
-        };
+        }
     }
 
     helpToggle(): void {
@@ -413,9 +416,12 @@ export class EditorComponent implements AfterViewInit {
         } else if (target instanceof HTMLImageElement && !target.classList.contains('editor-icon-img')) {
             this.imageControlsHidden = false;
             this.tableControlsHidden = true;
-            if (!target.isSameNode(this.clickedImage)) {
-                this.tools.saveResizedImage(this.clickedImage);
+            if (target.isSameNode(this.clickedImage) &&
+                target.parentNode.nodeName === 'P' &&
+                (target.parentNode as HTMLElement).style.resize === 'both') {
+                return;
             }
+            this.tools.saveResizedImage(this.clickedImage);
             this.clickedImage = target;
             const p = document.createElement('p');
             p.style.cssText = 'resize: both; overflow: hidden; display: inline-block; margin: 0;';

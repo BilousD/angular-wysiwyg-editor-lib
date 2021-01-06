@@ -661,4 +661,14 @@ export class ButtonTools {
             }
         }
     }
+
+    border(range: Range): void {
+        const c = this.editorElement.getElementsByTagName('td');
+        // tslint:disable-next-line:prefer-for-of
+        for (let i = 0; i < c.length; i++) {
+            if (range.isPointInRange(c[i], 0)) {
+                // c[i].style.borderLeft
+            }
+        }
+    }
 }
