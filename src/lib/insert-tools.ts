@@ -32,18 +32,23 @@ export class InsertTools {
             // problem: if no block, tag will be inserted, but it will be inside one when blocks will be created
             this.tools.makeBlock();
 
-            while (this.tools.isBlock(f) || f.parentNode.isSameNode(this.editorElement)) {
-                f = f.parentNode;
-            }
-            if (offset === 0 && collapsed) {
-                f.parentNode.insertBefore(newNode, f);
+            if (f.isSameNode(this.editorElement)) {
+                this.tools.insertAfter(newNode, this.editorElement.childNodes[offset]);
             } else {
-                this.tools.insertAfter(newNode, f);
+                while (!f.isSameNode(this.editorElement) && !this.tools.isBlock(f) && !f.parentNode.isSameNode(this.editorElement)) {
+                    f = f.parentNode;
+                }
+                if (offset === 0 && collapsed) {
+                    f.parentNode.insertBefore(newNode, f);
+                } else {
+                    this.tools.insertAfter(newNode, f);
+                }
             }
         }
 
         const ref = factory.create(this.injector, null, newNode);
         ref.instance.params = pluginParameters;
+        ref.instance.selected = pluginParameters[0];
         return ref;
     }
 
@@ -63,7 +68,9 @@ export class InsertTools {
         if (!this.tools.isInDiv(s)) {
             this.tools.makeBlock();
             this.editorElement.appendChild(newNode);
-            this.editorElement.appendChild(document.createElement('br'));
+            const p = document.createElement('p');
+            p.appendChild(document.createElement('br'));
+            this.editorElement.appendChild(p);
         } else {
             const r = s.getRangeAt(0);
             let f = r.endContainer;
@@ -77,7 +84,13 @@ export class InsertTools {
             if (f.isSameNode(this.editorElement)) {
                 // div, so offsets counts differently
                 this.tools.insertAfter(newNode, f.childNodes[offset]);
+                if (!newNode.nextSibling) {
+                    const p = document.createElement('p');
+                    p.appendChild(document.createElement('br'));
+                    this.tools.insertAfter(p, newNode);
+                }
             } else if (offset === 0) {
+                // WHAT IS THIS?
                 f.parentNode.insertBefore(newNode, f);
             } else {
                 this.tools.insertAfter(newNode, f);

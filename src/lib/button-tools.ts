@@ -60,7 +60,9 @@ export class ButtonTools {
     tag(tag, attribute?): boolean {
         // check selection to be inside div
         const s = document.getSelection();
-
+        if (s.rangeCount < 1) {
+            return ;
+        }
         const r = s.getRangeAt(0);
         let a = r.startContainer;
         let f = r.endContainer;
@@ -246,12 +248,40 @@ export class ButtonTools {
 // ADDING TAG --------------------------------------------------------------------------------------
                 let tagParent = this.tools.getParent(a, tag, attribute);
                 if (tagParent) {
-                    if (!tagParent.parentNode.isSameNode(ca) && !this.tools.isBlock(tagParent.parentNode)) {
-                        this.tools.coverToRight(tagParent, ca, tag, attribute);
+                    if (!tagParent.parentNode.isSameNode(ca)) {
+                        if (!this.tools.isBlock(tagParent.parentNode)) {
+                            let returnedBlock = this.tools.coverToRight(tagParent, ca, tag, attribute);
+                            // while returnedBlock is not child of ca, cover blocks in tag
+                            returnedBlock = this.tools.coverBlocksToRight(returnedBlock, ca, tag, attribute);
+                        } else {
+                            try {
+                                while (tagParent.nextSibling) {
+                                    tagParent.appendChild(tagParent.nextSibling);
+                                }
+                            } catch (e) {
+                                console.error('if you see this error - try contacting me, ' +
+                                    'and send this message. I hope this error wont happen, but to be safe...');
+                            }
+                            this.tools.coverBlocksToRight(tagParent, ca, tag, attribute);
+                        }
+                    } else {
+                        while (tagParent.nextSibling) {
+                            tagParent.appendChild(tagParent.nextSibling);
+                        }
                     }
                 } else {
-                    if (!a.parentNode.isSameNode(ca) && !this.tools.isBlock(a.parentNode)) {
-                        this.tools.coverToRight(a, ca, tag, attribute);
+                    if (!a.parentNode.isSameNode(ca)) {
+                        if (!this.tools.isBlock(a.parentNode)) {
+                            let returnedBlock = this.tools.coverToRight(a, ca, tag, attribute);
+                            returnedBlock = this.tools.coverBlocksToRight(returnedBlock, ca, tag, attribute);
+                        } else {
+                            const ne = this.tools.createElement(tag, attribute);
+                            a.parentNode.insertBefore(ne, a);
+                            while (ne.nextSibling) {
+                                ne.appendChild(ne.nextSibling);
+                            }
+                            this.tools.coverBlocksToRight(ne.parentNode, ca, tag, attribute);
+                        }
                     } else {
                         this.tools.coverNodeInNewElement(a, tag, attribute);
                     }
@@ -262,7 +292,7 @@ export class ButtonTools {
 
                 let start = this.tools.getChild(a, ca).nextSibling;
                 const end = this.tools.getChild(f, ca);
-                while (!start.isSameNode(end)) {
+                while (!start.isSameNode(end)) {    // cover in tag nodes between start and end on level below ca
                     if (start.nodeType === 1) {
                         if (start.nodeName.toLowerCase() !== 'editor-plugin') {
                             const collection = (start as Element).getElementsByTagName(tag);
@@ -291,14 +321,37 @@ export class ButtonTools {
                     }
                 }
 
-                tagParent = this.tools.getParent(f, tag, attribute);
+                tagParent = this.tools.getParent(f, tag, attribute); // cover end node below ca
                 if (tagParent) {
-                    if (!tagParent.parentNode.isSameNode(ca) && !this.tools.isBlock(tagParent.parentNode)) {
-                        this.tools.coverToLeft(tagParent, ca, tag, attribute);
+                    if (!tagParent.parentNode.isSameNode(ca)) {
+                        if (!this.tools.isBlock(tagParent.parentNode)) {
+                            let returnedBlock = this.tools.coverToLeft(tagParent, ca, tag, attribute);
+                            returnedBlock = this.tools.coverBlocksToLeft(returnedBlock, ca, tag, attribute);
+                        } else {
+                            while (tagParent.previousSibling) {
+                                tagParent.insertBefore(tagParent.previousSibling, tagParent.firstChild);
+                            }
+                            this.tools.coverBlocksToLeft(tagParent, ca, tag, attribute);
+                        }
+                    } else {
+                        while (tagParent.previousSibling) {
+                            tagParent.insertBefore(tagParent.previousSibling, tagParent.firstChild);
+                        }
                     }
                 } else {
-                    if (!f.parentNode.isSameNode(ca) && !this.tools.isBlock(f.parentNode)) {
-                        this.tools.coverToLeft(f, ca, tag, attribute);
+                    if (!f.parentNode.isSameNode(ca)) {
+                        if (!this.tools.isBlock(f.parentNode)) {
+                            let returnedBlock = this.tools.coverToLeft(f, ca, tag, attribute);
+                            returnedBlock = this.tools.coverBlocksToLeft(returnedBlock, ca, tag, attribute);
+                        } else {
+                            const ne = this.tools.createElement(tag, attribute);
+                            f.parentNode.insertBefore(ne, f);
+                            ne.appendChild(f);
+                            while (ne.previousSibling) {
+                                ne.insertBefore(ne.previousSibling, ne.firstChild);
+                            }
+                            this.tools.coverBlocksToLeft(ne.parentNode, ca, tag, attribute);
+                        }
                     } else {
                         this.tools.coverNodeInNewElement(f, tag, attribute);
                     }
@@ -310,7 +363,6 @@ export class ButtonTools {
         this.tools.clean();
         this.tools.clean();
         const range = new Range();
-        console.log(rangeStart);
         range.setStart(rangeStart, 0);
         range.setEnd(rangeEnd, (rangeEnd as Text).length);
         document.normalize();
@@ -561,6 +613,61 @@ export class ButtonTools {
                     start = p;
                 }
                 this.tools.insertAfter(finishProduct, start);
+            }
+        }
+    }
+
+    align(al: string): void {
+        // get anchor, focus, get closest block element, put text-align style, if focus in another block - put in focus and in between
+        const s = document.getSelection();
+
+        if (!this.tools.isInDiv(s)) {
+            return;
+        }
+        const r = s.getRangeAt(0);
+        let start = r.startContainer;
+        start = this.tools.putInOffset(start, r.startOffset);
+        if (this.tools.enumToAlign(this.tools.isRangeAligned(r)) === al) {
+            al = '';
+        }
+        start = this.tools.getBlock(start);
+        (start as HTMLParagraphElement).style.textAlign = al;
+        const ca = r.commonAncestorContainer;
+        if (!(r.collapsed || start.contains(ca))) {
+            let end = r.endContainer;
+            end = this.tools.putInOffset(end, r.endOffset);
+            end = this.tools.getBlock(end);
+            (end as HTMLParagraphElement).style.textAlign = al;
+
+            while (!start.parentNode.isSameNode(ca)) {
+                if (start.isSameNode(ca)) {
+                    // really bad thing
+                    break;
+                }
+                this.tools.alignSiblingBlocks(start.nextSibling, al);
+                start = start.parentNode;
+            }
+            while (!end.parentNode.isSameNode(ca)) {
+                if (end.isSameNode(ca)) {
+                    break;
+                }
+                this.tools.alignSiblingBlocks(end.previousSibling, al, true);
+                end = end.parentNode;
+            }
+            start = start.nextSibling;
+            while (!start.isSameNode(end)) {
+                this.tools.alignSiblingBlocks(start.firstChild, al);
+                start = start.nextSibling;
+            }
+        }
+    }
+
+    border(range: Range): void {
+        const c = this.editorElement.getElementsByTagName('td');
+        // tslint:disable-next-line:prefer-for-of
+        for (let i = 0; i < c.length; i++) {
+            if (range.isPointInRange(c[i], 0)) {
+                // c[i].style.borderLeft
             }
         }
     }

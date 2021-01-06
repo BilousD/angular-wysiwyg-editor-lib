@@ -1,3 +1,5 @@
+import {Align} from './types';
+
 export class HelpingTools {
 
     editorElement: Element;
@@ -119,6 +121,14 @@ export class HelpingTools {
                     this.removeNodeSavingChildren(collection[i]);
                 }
             }
+        }
+    }
+
+    saveResizedImage(clickedImage): void {
+        if (clickedImage && window.getComputedStyle(clickedImage.parentElement).resize === 'both') {
+            clickedImage.style.width = clickedImage.parentElement.style.width;
+            clickedImage.style.height = clickedImage.parentElement.style.height;
+            this.removeNodeSavingChildren(clickedImage.parentNode);
         }
     }
 
@@ -261,6 +271,59 @@ export class HelpingTools {
                 return this.coverToRight(node.parentNode, parent, tag, attribute);
             }
         }
+    }
+
+    coverBlock(block, tag, attribute): void {
+        const collection = (block as Element).getElementsByTagName(tag);
+        // tslint:disable-next-line:prefer-for-of
+        for (let i = 0; i < collection.length; i++) {
+            this.removeNodeSavingChildren(collection[i]);
+        }
+
+        // TODO start.firstChild could be block if nested blockquotes
+        if (this.isBlock(block.firstChild)) {
+            const col = block.childNodes;
+            // tslint:disable-next-line:prefer-for-of
+            for (let i = 0; i < col.length; i++) {
+                this.coverBlock(col[i], tag, attribute);
+            }
+        } else {
+            const ne = this.createElement(tag, attribute);
+            while (block.firstChild) {
+                ne.appendChild(block.firstChild);
+            }
+            block.appendChild(ne);
+        }
+    }
+
+    /**
+     * covers blocks to right with tag, until children of end node
+     * @param start
+     * @param end
+     * @param tag
+     * @param attribute
+     */
+    coverBlocksToRight(start, end, tag, attribute): Node {
+        while (!start.parentNode.isSameNode(end) && !start.isSameNode(end)) {
+            let next = start.nextSibling;
+            while (next) {
+                this.coverBlock(next, tag, attribute);
+                next = next.nextSibling;
+            }
+            start = start.parentNode;
+        }
+        return start;
+    }
+    coverBlocksToLeft(start, end, tag, attribute): Node {
+        while (!start.parentNode.isSameNode(end) && !start.isSameNode(end)) {
+            let prev = start.previousSibling;
+            while (prev) {
+                this.coverBlock(prev, tag, attribute);
+                prev = prev.previousSibling;
+            }
+            start = start.parentNode;
+        }
+        return start;
     }
 
     /**
@@ -638,7 +701,9 @@ export class HelpingTools {
      * @private
      */
     isInDiv(s: Selection): boolean {
-        // TODO use range.comparePoint() to check if in div?
+        if (s.rangeCount < 1) {
+            return false;
+        }
         if (this.editorElement.contains(s.anchorNode)) {
             // if anchor is inside editor-plugin (has parent?)
             if (!this.editorElement.contains(s.focusNode)) {
@@ -787,6 +852,153 @@ export class HelpingTools {
                 child.remove();
             } else {
                 this.removeStyling(child);
+            }
+        }
+    }
+
+    getAlignBlock(node: Node): Node {
+        // TODO change .align to .style.textAlign
+        while (!(this.isBlock(node) && (node as HTMLParagraphElement).style.textAlign)) {
+            if (node.isSameNode(this.editorElement)) {
+                return null;
+            }
+            node = node.parentNode;
+        }
+        return node;
+    }
+
+    isRangeAligned(r: Range): Align {
+        let start = r.startContainer;
+        start = this.putInOffset(start, r.startOffset);
+        start = this.getAlignBlock(start);
+        if (!start) {
+            return Align.None;
+        } // start = block with align
+        const align = (start as HTMLParagraphElement).style.textAlign;
+
+        const ca = r.commonAncestorContainer;
+        if (!(r.collapsed || start.contains(ca))) {
+            let end = r.endContainer;
+            end = this.putInOffset(end, r.endOffset);
+            end = this.getAlignBlock(end);
+            if (!end || (end as HTMLParagraphElement).style.textAlign !== align) {
+                return Align.None;
+            } // end = block with align
+
+            while (!start.parentNode.isSameNode(ca)) {
+                if (!this.checkSiblingsForAlign(start.nextSibling, align)) {
+                    return Align.None;
+                }
+                start = start.parentNode;
+            }
+            while (!end.parentNode.isSameNode(ca)) {
+                if (!this.checkSiblingsForAlign(end.previousSibling, align, true)) {
+                    return Align.None;
+                }
+                end = end.parentNode;
+            }
+            start = start.nextSibling;
+            while (!start.isSameNode(end)) {
+                if (!this.checkSiblingsForAlign(start.firstChild, align, true)) {
+                    return Align.None;
+                }
+                start = start.nextSibling;
+            }
+        }
+        return this.alignToEnum(align);
+    }
+    enumToAlign(align: Align): string {
+        switch (align) {
+            case Align.Left:
+                return 'left';
+            case Align.Center:
+                return 'center';
+            case Align.Right:
+                return 'right';
+            case Align.Justify:
+                return 'justify';
+            default:
+                return '';
+        }
+    }
+    alignToEnum(align: string): Align {
+        switch (align) {
+            case 'left': return Align.Left;
+            case 'center': return Align.Center;
+            case 'right': return Align.Right;
+            case 'justify': return Align.Justify;
+            default:
+                return Align.None;
+        }
+    }
+    checkSiblingsForAlign(node, alignType, previous?): boolean {
+        let ns = node;
+        while (ns) {
+            let c = ns;
+            while (this.isBlock(c)) {
+                c = c.firstChild;
+            }
+            c = this.getAlignBlock(c);
+            if (!c || (c as HTMLParagraphElement).style.textAlign !== alignType) {
+                return false;
+            }
+            while (!c.isSameNode(ns)) {
+                if (!previous) {
+                    if (!this.checkSiblingsForAlign(c.nextSibling, alignType)) {
+                        return false;
+                    }
+                } else {
+                    if (!this.checkSiblingsForAlign(c.previousSibling, alignType)) {
+                        return false;
+                    }
+                }
+                c = c.parentNode;
+            }
+            if (!previous) {
+                ns = ns.nextSibling;
+            } else {
+                ns = ns.previousSibling;
+            }
+        }
+        return true;
+    }
+
+    putInOffset(node: Node, offset): Node {
+        if (node.nodeType === 1) {
+            if (offset > node.childNodes.length) {
+                return node.childNodes[node.childNodes.length - 1];
+            } else {
+                return node.childNodes[offset];
+            }
+        }
+        return node;
+    }
+
+    alignSiblingBlocks(node: Node, align, previous?): void {
+        let ns = node; // ns is block?
+        while (ns) {
+            if (!ns.firstChild) {
+                if (!previous) {
+                    ns = ns.nextSibling;
+                } else {
+                    ns = ns.previousSibling;
+                }
+                continue;
+            }
+            let c = ns;
+            while (c.firstChild && this.isBlock(c.firstChild)) {
+                c = c.firstChild;
+            }
+            // c => <block (c)> asd <tag> asd </tag> asd </block>
+            (c as HTMLParagraphElement).style.textAlign = align;
+            while (!c.isSameNode(ns)) {
+                this.alignSiblingBlocks(c, align);
+                c = c.parentNode;
+            }
+            if (!previous) {
+                ns = ns.nextSibling;
+            } else {
+                ns = ns.previousSibling;
             }
         }
     }

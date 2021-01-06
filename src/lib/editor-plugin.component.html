@@ -8,7 +8,7 @@
     <div style="display: flex">
         <form #myForm="ngForm">
             <label>Plugins:
-                <select><!--  [(value)]="selected" -->
+                <select (change)="onSelect($event)">
                     <option [value]="param" *ngFor="let param of params">{{ param.selector }}</option>
                 </select>
             </label>

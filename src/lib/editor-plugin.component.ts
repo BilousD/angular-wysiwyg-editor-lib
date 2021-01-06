@@ -23,6 +23,11 @@ export class EditorPluginComponent {
 
     constructor() { }
 
+    onSelect(event: Event): void {
+        const i = (event.target as HTMLSelectElement).options.selectedIndex;
+        this.selected = this.params[i];
+    }
+
     setPlugin(el): void {
         this.plugin = el;
         this.params.find(elem => {
