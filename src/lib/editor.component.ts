@@ -519,6 +519,55 @@ export class EditorComponent implements AfterViewInit {
         }
     }
 
+    removeRow(): void {
+        if (this.helpPressed) { return; }
+        const selection = document.getSelection();
+        if (selection.rangeCount === 0) {
+            if (!this.clickedCell) {
+                return;
+            }
+            const tBody = this.tools.getTable(this.clickedCell).firstChild;
+            this.clickedCell.parentElement.remove();
+            this.clickedCell = undefined;
+            if (!tBody.childNodes) {
+                tBody.parentElement.remove();
+            }
+            return;
+        }
+        const range = selection.getRangeAt(0);
+        if (!this.tools.getTable(range.commonAncestorContainer)) {
+            return;
+        }
+        // for row - points can be tr node, but for column deletion, only td and lower nodes can be deleted
+        const row = this.tools.getRow(this.tools.getNode(range.startContainer, range.startOffset));
+        const endingRow = this.tools.getRow(this.tools.getNode(range.endContainer, range.endOffset));
+        if (!row || !endingRow) {
+            // if somehow not found starting point row or ending point row - delete one that found
+            let tBody;
+            if (row) {
+                tBody = this.tools.getTable(row).firstChild;
+                (row as Element).remove();
+            }
+            if (endingRow) {
+                tBody = this.tools.getTable(row).firstChild;
+                (endingRow as Element).remove();
+            }
+            if (tBody && !tBody.childNodes) {
+                tBody.parentElement.remove();
+            }
+            return;
+        }
+        const tableBody = this.tools.getTable(row).firstChild;
+        const index = row.rowIndex;
+        const endIndex = endingRow.rowIndex;
+        for (let i = index; i <= endIndex; i++) {
+            (tableBody as HTMLTableSectionElement).deleteRow(index);
+        }
+        if (!tableBody.childNodes) {
+            tableBody.parentElement.remove();
+        }
+    }
+
     insertColumn(toRight?): void {
         if (this.helpPressed) { return; }
         const tbody = this.clickedCell.parentNode.parentNode as HTMLTableSectionElement;
@@ -532,6 +581,59 @@ export class EditorComponent implements AfterViewInit {
                 this.tools.insertCell(row, index);
             }
             // }
+        }
+    }
+
+    removeColumn(): void {
+        if (this.helpPressed) { return; }
+        const selection = document.getSelection();
+        if (selection.rangeCount === 0) {
+            if (!this.clickedCell) {
+                return;
+            }
+            const tBody = this.tools.getTable(this.clickedCell).firstChild;
+            this.tools.removeSingleColumn(this.clickedCell, (tBody as HTMLTableSectionElement));
+            this.clickedCell = undefined;
+            if (!tBody.childNodes) {
+                tBody.parentElement.remove();
+            }
+            return;
+        }
+        const range = selection.getRangeAt(0);
+        if (!this.tools.getTable(range.commonAncestorContainer)) {
+            return;
+        }
+        // column deletion, only td and lower nodes can be deleted
+        const cell = this.tools.getCell(this.tools.getNode(range.startContainer, range.startOffset));
+        const endingCell = this.tools.getCell(this.tools.getNode(range.endContainer, range.endOffset));
+        if (!cell || !endingCell) {
+            let tBody;
+            if (cell) {
+                tBody = this.tools.getTable(cell).firstChild;
+                this.tools.removeSingleColumn(cell, tBody);
+            }
+            if (endingCell) {
+                tBody = this.tools.getTable(endingCell).firstChild;
+                this.tools.removeSingleColumn(endingCell, tBody);
+            }
+            if (tBody && !tBody.childNodes) {
+                // TODO better check if table is empty
+                tBody.parentElement.remove();
+            }
+            return;
+        }
+        const tableBody = this.tools.getTable(cell).firstChild as HTMLTableSectionElement;
+        const index = cell.cellIndex;
+        const endIndex = endingCell.cellIndex;
+        // tslint:disable-next-line:prefer-for-of
+        for (let i = 0; i < tableBody.childNodes.length; i++) {
+            for (let j = index; j <= endIndex; j++) {
+                tableBody.childNodes[i].childNodes[index].remove();
+            }
+        }
+        if (!tableBody.childNodes) {
+            // TODO better check if table is empty
+            tableBody.parentElement.remove();
         }
     }
 

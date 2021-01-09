@@ -1002,4 +1002,54 @@ export class HelpingTools {
             }
         }
     }
+
+    getRow(sc: Node): HTMLTableRowElement {
+        while (sc && !sc.isSameNode(this.editorElement)) {
+            if (sc.nodeName === 'TR') {
+                return sc as HTMLTableRowElement;
+            }
+            sc = sc.parentNode;
+        }
+        return null;
+    }
+
+    getNode(startContainer: Node, startOffset: number): Node {
+        if (startContainer.nodeType === 1) {
+            return startContainer.childNodes[startOffset];
+        } else {
+            return startContainer;
+        }
+    }
+
+    getTable(n: Node): Node {
+        while (n && !n.isSameNode(this.editorElement)) {
+            if (n.nodeName === 'TABLE') {
+                return n;
+            }
+            n = n.parentNode;
+        }
+        return null;
+    }
+
+    getCell(node: Node): HTMLTableCellElement {
+        while (node && !node.isSameNode(this.editorElement)) {
+            if (node.nodeName === 'TD') {
+                return node as HTMLTableCellElement;
+            }
+            node = node.parentNode;
+        }
+        return null;
+    }
+
+    removeSingleColumn(cell: HTMLTableCellElement, tableBody: HTMLTableSectionElement): void {
+        const index = cell.cellIndex;
+        if (tableBody.firstChild.childNodes.length < 2) {
+            tableBody.parentElement.remove();
+            return;
+        }
+        // tslint:disable-next-line:prefer-for-of
+        for (let i = 0; i < tableBody.childNodes.length; i++) {
+            tableBody.childNodes[i].childNodes[index].remove();
+        }
+    }
 }
