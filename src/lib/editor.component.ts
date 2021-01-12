@@ -14,7 +14,7 @@ import {HelpingTools} from './helping-tools';
 import {EditorPluginComponent} from './editor-plugin.component';
 import {ButtonTools} from './button-tools';
 import {InsertTools} from './insert-tools';
-import {Align} from './types';
+import {Align, BorderStyle, BorderWidth} from './types';
 
 @Component({
     selector: 'lib-wysiwyg-editor',
@@ -52,6 +52,8 @@ export class EditorComponent implements AfterViewInit {
     tableControlsTop = 0;
     tableControlsLeft = 0;
     clickedCell: HTMLTableCellElement;
+    borderStyle = BorderStyle;
+    borderWidth = BorderWidth;
 
     pluginInstances: EditorPluginComponent[] = [];
     @Input() pluginParameters: { selector: string, attributes: string[] }[];
@@ -654,5 +656,10 @@ export class EditorComponent implements AfterViewInit {
     align(al: string): void {
         if (this.helpPressed) { return; }
         this.buttonTools.align(al);
+    }
+
+    border(style: BorderStyle | BorderWidth, isWidth?): void {
+        if (this.helpPressed) { return; }
+        this.buttonTools.border(style, isWidth);
     }
 }
