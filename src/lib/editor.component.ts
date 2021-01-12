@@ -658,8 +658,18 @@ export class EditorComponent implements AfterViewInit {
         this.buttonTools.align(al);
     }
 
-    border(style: BorderStyle | BorderWidth, isWidth?): void {
+    changeStyle(style: BorderStyle): void {
         if (this.helpPressed) { return; }
-        this.buttonTools.border(style, isWidth);
+        const f = (borderStyle: CSSStyleDeclaration) => {
+            borderStyle.borderStyle = style;
+        };
+        this.buttonTools.border(f);
+    }
+
+    changeWidth(width: BorderWidth): void {
+        const f = (borderStyle: CSSStyleDeclaration) => {
+            borderStyle.borderWidth = width;
+        };
+        this.buttonTools.border(f);
     }
 }

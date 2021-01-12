@@ -663,7 +663,7 @@ export class ButtonTools {
         }
     }
 
-    border(borderStyle: BorderStyle | BorderWidth, isWidth?: boolean): void {
+    border(f): void {
         const s = document.getSelection();
         if (s.rangeCount < 1) {
             return;
@@ -673,11 +673,7 @@ export class ButtonTools {
         // tslint:disable-next-line:prefer-for-of
         for (let i = 0; i < c.length; i++) {
             if (range.isPointInRange(c[i], 0)) {
-                if (isWidth) {
-                    c[i].style.borderWidth = borderStyle;
-                } else {
-                    c[i].style.borderStyle = borderStyle;
-                }
+                f(c[i].style);
             }
         }
     }
