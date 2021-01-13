@@ -14,7 +14,7 @@ import {HelpingTools} from './helping-tools';
 import {EditorPluginComponent} from './editor-plugin.component';
 import {ButtonTools} from './button-tools';
 import {InsertTools} from './insert-tools';
-import {Align} from './types';
+import {Align, BorderStyle, BorderWidth} from './types';
 
 @Component({
     selector: 'lib-wysiwyg-editor',
@@ -36,6 +36,8 @@ export class EditorComponent implements AfterViewInit {
     @Input() startingHTMLvalue = '';
     @ViewChild('c1') color1: ElementRef<HTMLInputElement>;
     @ViewChild('c2') color2: ElementRef<HTMLInputElement>;
+    @ViewChild('c3') color3: ElementRef<HTMLInputElement>;
+    @ViewChild('c3') color4: ElementRef<HTMLInputElement>;
     // @Output() output: EventEmitter<any> = new EventEmitter<any>();
 
     boldPressed: boolean;
@@ -52,6 +54,8 @@ export class EditorComponent implements AfterViewInit {
     tableControlsTop = 0;
     tableControlsLeft = 0;
     clickedCell: HTMLTableCellElement;
+    borderStyle = BorderStyle;
+    borderWidth = BorderWidth;
 
     pluginInstances: EditorPluginComponent[] = [];
     @Input() pluginParameters: { selector: string, attributes: string[] }[];
@@ -654,5 +658,33 @@ export class EditorComponent implements AfterViewInit {
     align(al: string): void {
         if (this.helpPressed) { return; }
         this.buttonTools.align(al);
+    }
+
+    changeStyle(style: BorderStyle): void {
+        if (this.helpPressed) { return; }
+        const f = (borderStyle: CSSStyleDeclaration) => {
+            borderStyle.borderStyle = style;
+        };
+        this.buttonTools.cellStyleChange(f);
+    }
+
+    changeWidth(width: BorderWidth): void {
+        const f = (borderStyle: CSSStyleDeclaration) => {
+            borderStyle.borderWidth = width;
+        };
+        this.buttonTools.cellStyleChange(f);
+    }
+
+    changeBackground(color: string): void {
+        const f = (borderStyle: CSSStyleDeclaration) => {
+            borderStyle.backgroundColor = color;
+        };
+        this.buttonTools.cellStyleChange(f);
+    }
+    changeBorderColor(color: string): void {
+        const f = (borderStyle: CSSStyleDeclaration) => {
+            borderStyle.borderColor = color;
+        };
+        this.buttonTools.cellStyleChange(f);
     }
 }

@@ -1,4 +1,5 @@
 import {HelpingTools} from './helping-tools';
+import {BorderStyle, BorderWidth} from './types';
 
 export class ButtonTools {
     editorElement: Element;
@@ -662,12 +663,17 @@ export class ButtonTools {
         }
     }
 
-    border(range: Range): void {
+    cellStyleChange(f): void {
+        const s = document.getSelection();
+        if (s.rangeCount < 1) {
+            return;
+        }
+        const range = s.getRangeAt(0);
         const c = this.editorElement.getElementsByTagName('td');
         // tslint:disable-next-line:prefer-for-of
         for (let i = 0; i < c.length; i++) {
             if (range.isPointInRange(c[i], 0)) {
-                // c[i].style.borderLeft
+                f(c[i].style);
             }
         }
     }
