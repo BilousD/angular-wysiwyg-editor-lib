@@ -663,8 +663,7 @@ export class ButtonTools {
         }
     }
 
-    // TODO change function name
-    border(f): void {
+    cellStyleChange(f): void {
         const s = document.getSelection();
         if (s.rangeCount < 1) {
             return;

@@ -665,26 +665,26 @@ export class EditorComponent implements AfterViewInit {
         const f = (borderStyle: CSSStyleDeclaration) => {
             borderStyle.borderStyle = style;
         };
-        this.buttonTools.border(f);
+        this.buttonTools.cellStyleChange(f);
     }
 
     changeWidth(width: BorderWidth): void {
         const f = (borderStyle: CSSStyleDeclaration) => {
             borderStyle.borderWidth = width;
         };
-        this.buttonTools.border(f);
+        this.buttonTools.cellStyleChange(f);
     }
 
     changeBackground(color: string): void {
         const f = (borderStyle: CSSStyleDeclaration) => {
             borderStyle.backgroundColor = color;
         };
-        this.buttonTools.border(f);
+        this.buttonTools.cellStyleChange(f);
     }
     changeBorderColor(color: string): void {
         const f = (borderStyle: CSSStyleDeclaration) => {
             borderStyle.borderColor = color;
         };
-        this.buttonTools.border(f);
+        this.buttonTools.cellStyleChange(f);
     }
 }
